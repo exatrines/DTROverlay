@@ -15,6 +15,7 @@ public sealed class OverlayWindow : Window
 
     private DtrOverlayContent _content;
     private OverlayPositionOrigin? _appliedOrigin;
+    private bool _followVanillaPaddingPushed;
 
     public OverlayWindow()
         : base("DTR Overlay##dtroverlayHud", BaseFlags | ImGuiWindowFlags.NoBackground, true)
@@ -33,9 +34,22 @@ public sealed class OverlayWindow : Window
         if (!DrawConditions())
             return;
 
+        if (FollowVanillaDtrMode.IsActive && !FollowVanillaDtrMode.IsVanillaDtrVisible)
+            return;
+
         _content = DtrOverlayCollector.Collect();
         if (_content.IsEmpty && !C.OverlayEditMode)
             return;
+
+        if (FollowVanillaDtrMode.IsActive)
+        {
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+            _followVanillaPaddingPushed = true;
+        }
+        else
+        {
+            _followVanillaPaddingPushed = false;
+        }
 
         if (!FollowVanillaDtrMode.IsActive)
         {
@@ -50,18 +64,32 @@ public sealed class OverlayWindow : Window
 
     public override void Draw()
     {
-        if (!DrawConditions())
-            return;
+        try
+        {
+            if (!DrawConditions())
+                return;
 
-        if (_content.IsEmpty && C.OverlayEditMode)
-            DrawEditModePlaceholder();
-        else if (!_content.IsEmpty)
-            DrawContent();
+            if (FollowVanillaDtrMode.IsActive && !FollowVanillaDtrMode.IsVanillaDtrVisible)
+                return;
 
-        OverlayPositioning.SetLastWindowSize(ImGui.GetWindowSize());
+            if (_content.IsEmpty && C.OverlayEditMode)
+                DrawEditModePlaceholder();
+            else if (!_content.IsEmpty)
+                DrawContent();
 
-        if (C.OverlayEditMode && !FollowVanillaDtrMode.IsActive)
-            HandleEditModeDrag();
+            OverlayPositioning.SetLastWindowSize(ImGui.GetWindowSize());
+
+            if (C.OverlayEditMode && !FollowVanillaDtrMode.IsActive)
+                HandleEditModeDrag();
+        }
+        finally
+        {
+            if (_followVanillaPaddingPushed)
+            {
+                ImGui.PopStyleVar();
+                _followVanillaPaddingPushed = false;
+            }
+        }
     }
 
     private void UpdateEditModeState()

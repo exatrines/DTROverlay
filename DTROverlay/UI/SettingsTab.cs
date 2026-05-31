@@ -18,6 +18,7 @@ public static partial class SettingsTab
         }
 
         DrawEntriesSection();
+        DrawTooltipSection();
         DrawOptionSection();
     }
 }

@@ -63,6 +63,15 @@ internal static class OverlayEntryIds
     public static bool IsServerInfoShownInOverlay() =>
         C.ShowServerInfo;
 
+    public static void MigrateMiddleClickUi()
+    {
+        if (C.OpenPluginUiMiddleClickMigrated)
+            return;
+
+        C.OpenPluginUiOnMiddleClick = C.OpenPluginUiOnRightClick;
+        C.OpenPluginUiMiddleClickMigrated = true;
+    }
+
     public static void MigratePluginAffixes()
     {
         if (C.PluginAffixMigrated)

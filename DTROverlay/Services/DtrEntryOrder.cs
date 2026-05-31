@@ -10,6 +10,7 @@ internal static class DtrEntryOrder
         C.EntryOrder ??= [];
 
         OverlayEntryIds.MigratePluginAffixes();
+        OverlayEntryIds.MigrateMiddleClickUi();
         OverlayEntryIds.MigrateFontSizeScales();
         OverlayEntryIds.MigrateServerInfoTableRow();
         OverlayEntryIds.MigrateLegacyNativeIds(C.EntryOrder, C.HiddenEntryTitles, C.HiddenServerInfoParts);

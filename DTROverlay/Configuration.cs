@@ -18,6 +18,16 @@ public sealed class Configuration
     public OverlayVerticalFlow VerticalPluginFlow = OverlayVerticalFlow.TopToBottom;
     public OverlayVerticalAlignment OverlayVerticalAlignment = OverlayVerticalAlignment.Right;
     public bool OverlayEditMode;
+    public bool OpenPluginUiOnMiddleClick = true;
+    public bool OpenPluginUiMiddleClickMigrated;
+    public bool CenterTooltipBelowHoveredEntry = true;
+    public bool TooltipPositionMigrated;
+    public TooltipPosition TooltipPosition = TooltipPosition.Lower;
+    public float TooltipFontSizePx = DtrStyle.DefaultTooltipFontSizePx;
+    public Vector4 TooltipTextColor = DtrStyle.DefaultTooltipTextColor;
+    public Vector4 TooltipBackgroundColor = DtrStyle.DefaultTooltipBackgroundColor;
+
+    /// <summary>Legacy; migrated to <see cref="OpenPluginUiOnMiddleClick"/>.</summary>
     public bool OpenPluginUiOnRightClick = true;
     public bool ShowPluginEntrySeparators;
     public bool ShowNativeEntrySeparators;

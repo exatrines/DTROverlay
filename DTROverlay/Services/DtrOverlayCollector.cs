@@ -1,5 +1,6 @@
 using System.Linq;
 using Dalamud.Game.Gui.Dtr;
+using Dalamud.Game.Text.SeStringHandling;
 
 namespace DTROverlay.Services;
 
@@ -58,12 +59,18 @@ public static class DtrOverlayCollector
             yield break;
 
         var affixes = PluginEntryAffixSettings.Get(entry.Title);
-        if (!string.IsNullOrEmpty(affixes.Prefix))
-            yield return VisibleDtrEntry.FromPluginAffix(affixes.Prefix, entry.Title, PluginAffixRole.Prefix);
+        var tooltipData = EncodeDtrTooltip(entry.Tooltip);
+        var onClick = entry.OnClick;
 
-        yield return VisibleDtrEntry.FromSeString(entry.Text, entry.OnClick, entry.Title, entry.Title);
+        if (!string.IsNullOrEmpty(affixes.Prefix))
+            yield return VisibleDtrEntry.FromPluginAffix(affixes.Prefix, entry.Title, PluginAffixRole.Prefix, onClick, tooltipData);
+
+        yield return VisibleDtrEntry.FromSeString(entry.Text, onClick, entry.Title, entry.Title, entry.Tooltip);
 
         if (!string.IsNullOrEmpty(affixes.Suffix))
-            yield return VisibleDtrEntry.FromPluginAffix(affixes.Suffix, entry.Title, PluginAffixRole.Suffix);
+            yield return VisibleDtrEntry.FromPluginAffix(affixes.Suffix, entry.Title, PluginAffixRole.Suffix, onClick, tooltipData);
     }
+
+    private static byte[] EncodeDtrTooltip(SeString tooltip) =>
+        tooltip != null && !string.IsNullOrEmpty(tooltip.TextValue) ? tooltip.Encode() : null;
 }

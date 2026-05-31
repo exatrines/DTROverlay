@@ -61,13 +61,30 @@ public static partial class DtrImGui
                     entry.DtrEntryTitle,
                     entry.Opacity,
                     entry.LayoutKey,
-                    colorLayoutKey);
+                    colorLayoutKey,
+                    entry.HoverTooltipSeStringData);
                 break;
             case VisibleDtrEntryKind.Image:
-                DrawImage(entry.Image, entry.Opacity, entry.ImageScale, entry.LayoutKey, entry.HoverTooltip);
+                DrawImage(
+                    entry.Image,
+                    entry.Opacity,
+                    entry.ImageScale,
+                    entry.LayoutKey,
+                    entry.HoverTooltip,
+                    entry.OnClick,
+                    entry.DtrEntryTitle,
+                    entry.HoverTooltipSeStringData);
                 break;
             default:
-                DrawStyledText(entry.Text, entry.Opacity, entry.LayoutKey, colorLayoutKey, entry.HoverTooltip);
+                DrawStyledText(
+                    entry.Text,
+                    entry.Opacity,
+                    entry.LayoutKey,
+                    colorLayoutKey,
+                    entry.HoverTooltip,
+                    entry.OnClick,
+                    entry.DtrEntryTitle,
+                    entry.HoverTooltipSeStringData);
                 break;
         }
     }
@@ -84,13 +101,24 @@ public static partial class DtrImGui
         };
     }
 
+    private static SeStringDrawParams CreateTooltipSeStringDrawParams() =>
+        new SeStringDrawParams
+        {
+            Font = ImGui.GetFont(),
+            FontSize = ImGui.GetFontSize(),
+            LineHeight = 1f,
+            Edge = false,
+            Color = ImGui.ColorConvertFloat4ToU32(C.TooltipTextColor),
+        };
+
     private static void DrawStyledSeString(
         byte[] data,
         Action<DtrInteractionEvent> onClick,
         string dtrEntryTitle,
         float opacity,
         string layoutKey,
-        string colorLayoutKey)
+        string colorLayoutKey,
+        byte[] hoverTooltipSeStringData)
     {
         if (data.Length == 0)
             return;
@@ -125,7 +153,7 @@ public static partial class DtrImGui
             ImGuiHelpers.SeStringWrapped(data, drawParams);
         }
 
-        AdvanceEntry(slotSize, onClick, dtrEntryTitle, string.Empty);
+        AdvanceEntry(slotSize, onClick, dtrEntryTitle, hoverTooltipSeStringData: hoverTooltipSeStringData);
     }
 
     private static void DrawImage(
@@ -133,7 +161,10 @@ public static partial class DtrImGui
         float opacity,
         float imageScale,
         string layoutKey,
-        string hoverTooltip)
+        string hoverTooltip,
+        Action<DtrInteractionEvent> onClick,
+        string dtrEntryTitle,
+        byte[] hoverTooltipSeStringData)
     {
         var wrap = Svc.Texture.GetFromGame(image.TexturePath).GetWrapOrDefault();
         var size = DtrNativeImage.GetDisplaySize(image, IconHeight * (imageScale > 0f ? imageScale : 1f));
@@ -142,7 +173,7 @@ public static partial class DtrImGui
 
         if (wrap == null)
         {
-            AdvanceEntry(slotSize, hoverTooltip: hoverTooltip);
+            AdvanceEntry(slotSize, onClick, dtrEntryTitle, hoverTooltip, hoverTooltipSeStringData);
             return;
         }
 
@@ -154,7 +185,7 @@ public static partial class DtrImGui
             ImGui.GetWindowDrawList().AddImage(wrap.Handle, pos, pos + size, uv0, uv1, tint);
         }
 
-        AdvanceEntry(slotSize, hoverTooltip: hoverTooltip);
+        AdvanceEntry(slotSize, onClick, dtrEntryTitle, hoverTooltip, hoverTooltipSeStringData);
     }
 
     private static void DrawStyledText(
@@ -162,7 +193,10 @@ public static partial class DtrImGui
         float opacity,
         string layoutKey,
         string colorLayoutKey,
-        string hoverTooltip)
+        string hoverTooltip,
+        Action<DtrInteractionEvent> onClick,
+        string dtrEntryTitle,
+        byte[] hoverTooltipSeStringData)
     {
         if (string.IsNullOrEmpty(text))
             return;
@@ -186,7 +220,7 @@ public static partial class DtrImGui
             drawList.AddText(font, fontSize, pos, textColor, text);
         }
 
-        AdvanceEntry(slotSize, hoverTooltip: hoverTooltip);
+        AdvanceEntry(slotSize, onClick, dtrEntryTitle, hoverTooltip, hoverTooltipSeStringData);
     }
 
     private static Vector2 GetAlignedPos(Vector2 contentSize, string layoutKey)
@@ -205,7 +239,8 @@ public static partial class DtrImGui
         Vector2 size,
         Action<DtrInteractionEvent> onClick = null,
         string dtrEntryTitle = null,
-        string hoverTooltip = null)
+        string hoverTooltip = null,
+        byte[] hoverTooltipSeStringData = null)
     {
         if (C.OverlayEditMode)
         {
@@ -213,49 +248,118 @@ public static partial class DtrImGui
             return;
         }
 
-        var hasLeftClick = onClick != null;
-        var hasRightClick = C.OpenPluginUiOnRightClick && !string.IsNullOrEmpty(dtrEntryTitle);
-        var hasHoverTooltip = !string.IsNullOrEmpty(hoverTooltip);
+        var hasOnClick = onClick != null;
+        var hasMiddleClickUi = C.OpenPluginUiOnMiddleClick && !string.IsNullOrEmpty(dtrEntryTitle);
+        var hasHoverTooltip = !string.IsNullOrEmpty(hoverTooltip)
+            || hoverTooltipSeStringData is { Length: > 0 };
 
-        if (!hasLeftClick && !hasRightClick && !hasHoverTooltip)
+        if (!hasOnClick && !hasMiddleClickUi && !hasHoverTooltip)
         {
             ImGui.Dummy(size);
             return;
         }
 
-        if (ImGui.InvisibleButton("##dtrClick", size))
-        {
-            if (hasLeftClick)
-                InvokeDtrClick(onClick, MouseClickType.Left);
-        }
-        else if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && hasRightClick)
-        {
+        ImGui.InvisibleButton("##dtrClick", size);
+
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && hasOnClick)
+            InvokeDtrClick(onClick, MouseClickType.Left);
+
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && hasOnClick)
+            InvokeDtrClick(onClick, MouseClickType.Right);
+
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Middle) && hasMiddleClickUi)
             DtrPluginUiOpener.TryOpen(dtrEntryTitle);
-        }
 
         if (!ImGui.IsItemHovered())
             return;
 
-        if (hasHoverTooltip)
-            DrawStyledTooltip(hoverTooltip);
-        else if (hasLeftClick)
+        var itemMin = ImGui.GetItemRectMin();
+        var itemMax = ImGui.GetItemRectMax();
+
+        if (hoverTooltipSeStringData is { Length: > 0 })
+            DrawStyledSeStringTooltip(hoverTooltipSeStringData, itemMin, itemMax);
+        else if (!string.IsNullOrEmpty(hoverTooltip))
+            DrawStyledTooltip(hoverTooltip, itemMin, itemMax);
+        else if (hasOnClick)
             ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
     }
 
-    private static void DrawStyledTooltip(string text)
+    private static void PushTooltipStyle()
     {
-        var popupBg = ImGui.GetStyle().Colors[(int)ImGuiCol.PopupBg];
-        ImGui.PushStyleColor(
-            ImGuiCol.PopupBg,
-            new Vector4(popupBg.X, popupBg.Y, popupBg.Z, DtrStyle.TooltipBackgroundAlpha));
+        ImGui.PushStyleColor(ImGuiCol.PopupBg, C.TooltipBackgroundColor);
+        ImGui.PushStyleColor(ImGuiCol.Text, C.TooltipTextColor);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, DtrStyle.TooltipWindowRounding);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, DtrStyle.TooltipWindowPadding);
+    }
+
+    private static void PopTooltipStyle()
+    {
+        ImGui.PopStyleVar(2);
+        ImGui.PopStyleColor(2);
+    }
+
+    private static void BeginEntryTooltip(Vector2 itemMin, Vector2 itemMax)
+    {
+        switch (C.TooltipPosition)
+        {
+            case TooltipPosition.Lower:
+            {
+                var centerX = (itemMin.X + itemMax.X) * 0.5f;
+                var belowY = itemMax.Y + DtrStyle.TooltipEntrySpacing;
+                ImGui.SetNextWindowPos(new Vector2(centerX, belowY), ImGuiCond.Always, new Vector2(0.5f, 0f));
+                break;
+            }
+            case TooltipPosition.Upper:
+            {
+                var centerX = (itemMin.X + itemMax.X) * 0.5f;
+                var aboveY = itemMin.Y - DtrStyle.TooltipEntrySpacing;
+                ImGui.SetNextWindowPos(new Vector2(centerX, aboveY), ImGuiCond.Always, new Vector2(0.5f, 1f));
+                break;
+            }
+        }
 
         ImGui.BeginTooltip();
+    }
+
+    private static void DrawStyledSeStringTooltip(byte[] data, Vector2 itemMin, Vector2 itemMax)
+    {
+        if (data.Length == 0)
+            return;
+
+        PushTooltipStyle();
+        using var fontPush = DtrOverlayFonts.PushTooltip();
+
+        var drawParams = CreateTooltipSeStringDrawParams();
+        drawParams.TargetDrawList = ImGui.GetWindowDrawList();
+        drawParams.ScreenOffset = new Vector2(-10000f, -10000f);
+
+        var measured = ImGuiHelpers.SeStringWrapped(data, drawParams);
+        if (measured.Size == Vector2.Zero)
+        {
+            PopTooltipStyle();
+            return;
+        }
+
+        BeginEntryTooltip(itemMin, itemMax);
+
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(measured.Size);
+        drawParams.ScreenOffset = pos;
+        drawParams.TargetDrawList = ImGui.GetWindowDrawList();
+        ImGuiHelpers.SeStringWrapped(data, drawParams);
+
+        ImGui.EndTooltip();
+        PopTooltipStyle();
+    }
+
+    private static void DrawStyledTooltip(string text, Vector2 itemMin, Vector2 itemMax)
+    {
+        PushTooltipStyle();
+        BeginEntryTooltip(itemMin, itemMax);
+        using var fontPush = DtrOverlayFonts.PushTooltip();
         ImGui.TextUnformatted(text);
         ImGui.EndTooltip();
-        ImGui.PopStyleVar(2);
-        ImGui.PopStyleColor();
+        PopTooltipStyle();
     }
 
     private static void InvokeDtrClick(Action<DtrInteractionEvent> onClick, MouseClickType clickType)

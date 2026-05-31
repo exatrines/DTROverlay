@@ -19,9 +19,19 @@ internal static class DtrStyle
     public const float DefaultFollowVanillaVerticalOffset = 2f;
     /// <summary>Scales native glyph target down so ImGui text visually matches game fonts.</summary>
     public const float FollowVanillaFontVisualMatch = 0.88f;
+    /// <summary>
+    /// ImGui font cap height as a fraction of the native DTR collision row height (~24px).
+    /// Min-glyph sizing (see <see cref="FollowVanillaFontVisualMatch"/>) shrinks in duty when WorldInfo hides.
+    /// Calibrated as FollowVanillaFontVisualMatch × (typical digit cap height / row height).
+    /// </summary>
+    public const float FollowVanillaFontRowHeightRatio = FollowVanillaFontVisualMatch * (17f / 24f);
     public const float TooltipBackgroundAlpha = 0.6f;
     public const float TooltipWindowRounding = 6f;
-    public static readonly Vector2 TooltipWindowPadding = new(10f, 8f);
+    public const float TooltipEntrySpacing = 4f;
+    public static readonly Vector2 TooltipWindowPadding = new(6f, 4f);
+    public const float DefaultTooltipFontSizePx = 18f;
+    public static readonly Vector4 DefaultTooltipTextColor = new(1f, 1f, 1f, 1f);
+    public static readonly Vector4 DefaultTooltipBackgroundColor = new(0f, 0f, 0f, TooltipBackgroundAlpha);
 
     public const ImGuiColorEditFlags ColorEditFlags = ImGuiColorEditFlags.NoInputs;
 

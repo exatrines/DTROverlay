@@ -11,7 +11,7 @@ public static partial class DtrImGui
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, Vector2.Zero);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
-        if (FollowVanillaDtrMode.IsActive && DtrVanillaBounds.TryGet(out var bounds))
+        if (FollowVanillaDtrMode.IsActive && DtrVanillaBounds.TryGet(out var bounds, useScreenCoordinates: true))
             FollowVanillaFontScale.UpdateFromBounds(bounds);
 
         var fontPush = DtrOverlayFonts.PushActive();

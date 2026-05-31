@@ -23,6 +23,7 @@ public sealed class Plugin : IDalamudPlugin
         ECommonsMain.Init(pluginInterface, this);
 
         C = EzConfig.Init<Configuration>();
+        MigrateConfiguration(C);
         EzConfigGui.Init(UI.ConfigWindow.Draw, windowType: EzConfigGui.WindowType.Both);
         ConfigureConfigWindow();
 
@@ -44,6 +45,17 @@ public sealed class Plugin : IDalamudPlugin
             MinimumSize = ConfigUiConstants.MinimumWindowSize,
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
         };
+    }
+
+    private static void MigrateConfiguration(Configuration config)
+    {
+        if (config.TooltipPositionMigrated)
+            return;
+
+        config.TooltipPosition = config.CenterTooltipBelowHoveredEntry
+            ? TooltipPosition.Lower
+            : TooltipPosition.FollowCursor;
+        config.TooltipPositionMigrated = true;
     }
 
     private void DrawOverlay() => _overlayWindows.Draw();
