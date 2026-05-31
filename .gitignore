@@ -1,0 +1,6 @@
+.cursor/
+bin/
+obj/
+.vs/
+*.user
+*.suo
