@@ -23,14 +23,14 @@ public sealed class Plugin : IDalamudPlugin
         ECommonsMain.Init(pluginInterface, this);
 
         C = EzConfig.Init<Configuration>();
-        EzConfigGui.Init(UI.ConfigWindow.Draw, windowType: EzConfigGui.WindowType.Config);
+        EzConfigGui.Init(UI.ConfigWindow.Draw, windowType: EzConfigGui.WindowType.Both);
         ConfigureConfigWindow();
 
         _overlayWindows.AddWindow(_overlay);
         DtrNativePluginHider.Register();
         Svc.PluginInterface.UiBuilder.Draw += DrawOverlay;
 
-        const string help = "on|off|toggle|edit — Control overlay. No args: open settings.";
+        const string help = "Toggle settings UI. Subcommands: on|off|toggle";
         EzCmd.Add("/dtroverlay", PluginCommands.Handle, help);
     }
 
