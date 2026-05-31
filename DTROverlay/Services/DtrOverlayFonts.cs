@@ -17,8 +17,11 @@ internal static class DtrOverlayFonts
 
     private static IFontAtlas _overlayAtlas = null!;
     private static IFontHandle _fontHandle = null!;
+    private static IFontHandle _tooltipFontHandle = null!;
     private static bool _hasHandle;
+    private static bool _hasTooltipHandle;
     private static float _builtSizePx;
+    private static float _builtTooltipSizePx;
     private static bool _disposed;
 
     public static void Dispose()
@@ -30,6 +33,12 @@ internal static class DtrOverlayFonts
             _hasHandle = false;
         }
 
+        if (_hasTooltipHandle)
+        {
+            _tooltipFontHandle.Dispose();
+            _hasTooltipHandle = false;
+        }
+
         // Atlas lifetime is tied to the plugin via UiBuilder's scoped finalizer — do not Dispose it here.
         _overlayAtlas = null!;
     }
@@ -38,6 +47,24 @@ internal static class DtrOverlayFonts
         QuantizeSize(UiBuilder.DefaultFontSizePx * FollowVanillaFontScale.ActiveScale);
 
     public static void NotifyScaleChanged() => RequestRebuildIfNeeded(GetTargetSizePx());
+
+    public static float GetTooltipTargetSizePx() => QuantizeSize(C.TooltipFontSizePx);
+
+    public static void NotifyTooltipSizeChanged() => RequestTooltipRebuildIfNeeded(GetTooltipTargetSizePx());
+
+    public static IDisposable PushTooltip()
+    {
+        if (_disposed)
+            return PushTooltipFallback();
+
+        EnsureTooltipHandle();
+        RequestTooltipRebuildIfNeeded(GetTooltipTargetSizePx());
+
+        if (!_hasTooltipHandle || !_tooltipFontHandle.Available)
+            return PushTooltipFallback();
+
+        return _tooltipFontHandle.Push();
+    }
 
     public static IDisposable PushActive()
     {
@@ -96,11 +123,59 @@ internal static class DtrOverlayFonts
         _ = atlas.BuildFontsAsync();
     }
 
+    private static void EnsureTooltipHandle()
+    {
+        if (_hasTooltipHandle)
+            return;
+
+        _builtTooltipSizePx = GetTooltipTargetSizePx();
+        _tooltipFontHandle = GetOverlayAtlas().NewDelegateFontHandle(e =>
+            e.OnPreBuild(tk =>
+            {
+                var config = new SafeFontConfig
+                {
+                    SizePx = _builtTooltipSizePx,
+                    OversampleH = 3,
+                    OversampleV = 2,
+                    PixelSnapH = false,
+                };
+                DalamudDefaultFontAndFamilyId.Instance.AddToBuildToolkit(tk, in config);
+            }));
+
+        _hasTooltipHandle = true;
+        _ = GetOverlayAtlas().BuildFontsAsync();
+    }
+
+    private static void RequestTooltipRebuildIfNeeded(float targetPx)
+    {
+        if (!_hasTooltipHandle || targetPx == _builtTooltipSizePx)
+            return;
+
+        _builtTooltipSizePx = targetPx;
+
+        var atlas = GetOverlayAtlas();
+        if (!atlas.BuildTask.IsCompleted)
+            return;
+
+        _ = atlas.BuildFontsAsync();
+    }
+
     /// <summary>Used while the raster font is building or after plugin dispose.</summary>
     private static IDisposable PushScaledDefaultFontFallback()
     {
         ImGui.PushFont(UiBuilder.DefaultFont);
         var scale = FollowVanillaFontScale.ActiveScale;
+        var scaled = Math.Abs(scale - 1f) > 0.001f;
+        if (scaled)
+            ImGui.SetWindowFontScale(scale);
+
+        return new ScaledDefaultFontPopScope(scaled);
+    }
+
+    private static IDisposable PushTooltipFallback()
+    {
+        ImGui.PushFont(UiBuilder.DefaultFont);
+        var scale = C.TooltipFontSizePx / UiBuilder.DefaultFontSizePx;
         var scaled = Math.Abs(scale - 1f) > 0.001f;
         if (scaled)
             ImGui.SetWindowFontScale(scale);

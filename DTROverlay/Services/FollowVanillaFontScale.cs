@@ -35,8 +35,11 @@ internal static class FollowVanillaFontScale
         _cachedNativeRowHeight = bounds.RowHeight;
         _cachedContentToLineRatio = MeasureContentToLineHeightRatio(unitLineHeight);
 
-        // Target native glyph height; ImGui glyphs read larger at the same line height than game fonts.
-        var targetHeight = bounds.NativeTextLineHeight * DtrStyle.FollowVanillaFontVisualMatch;
+        // Collision row height is stable; min visible glyph height drops in duty (ET/LT labels vs WorldInfo).
+        var referenceHeight = bounds.RowHeight > 0f
+            ? bounds.RowHeight
+            : bounds.NativeTextLineHeight;
+        var targetHeight = referenceHeight * DtrStyle.FollowVanillaFontRowHeightRatio;
         _cachedVanillaMatchScale = Math.Clamp(targetHeight / unitLineHeight, MinScale, MaxScale);
     }
 

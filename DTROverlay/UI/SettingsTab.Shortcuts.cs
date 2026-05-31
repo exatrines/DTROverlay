@@ -34,6 +34,6 @@ public static partial class SettingsTab
     private static void DrawOptionSection()
     {
         DtrImGui.SectionHeader("Option");
-        ImGui.Checkbox("Open plugin UI on right-click", ref C.OpenPluginUiOnRightClick);
+        ImGui.Checkbox("Open plugin UI on middle-click", ref C.OpenPluginUiOnMiddleClick);
     }
 }

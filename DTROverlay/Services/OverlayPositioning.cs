@@ -70,22 +70,22 @@ internal static class OverlayPositioning
 
     public static void RefineFollowVanillaPositionInFrame()
     {
-        if (!FollowVanillaDtrMode.IsActive || !DtrVanillaBounds.TryGet(out var bounds))
+        if (!FollowVanillaDtrMode.IsActive || !DtrVanillaBounds.TryGet(out var bounds, useScreenCoordinates: true))
             return;
 
         var lineHeight = DtrImGui.GetHorizontalRowLineHeight();
-        var contentMinY = ImGui.GetWindowContentRegionMin().Y;
-        var windowY = GetFollowVanillaOverlayY(bounds, lineHeight, contentMinY);
+        // WindowPadding is zeroed before Begin (PreDraw); do not read stale content-region padding here.
+        var windowY = GetFollowVanillaOverlayY(bounds, lineHeight, contentRegionMinY: 0f);
         var windowSize = ImGui.GetWindowSize();
-
         var xOffset = C.FollowVanillaHorizontalOffset;
-        if (C.FollowVanillaDtrSide == FollowVanillaDtrSide.Left)
-        {
-            ImGui.SetWindowPos(new Vector2(bounds.ScreenLeft - windowSize.X + xOffset, windowY));
-            return;
-        }
 
-        ImGui.SetWindowPos(new Vector2(bounds.ScreenRight + xOffset, windowY));
+        var pos = C.FollowVanillaDtrSide == FollowVanillaDtrSide.Left
+            ? new Vector2(bounds.ScreenLeft - windowSize.X + xOffset, windowY)
+            : new Vector2(bounds.BarScreenRight + xOffset, windowY);
+
+        ImGui.SetWindowPos(pos);
+        // Right side keeps PreDraw X, so ImGui may not reset the cursor after Y-only SetWindowPos.
+        ImGui.SetCursorPos(Vector2.Zero);
     }
 
     private static bool TryGetFollowVanillaWindowPos(out Vector2 pos, out Vector2 pivot)
@@ -105,7 +105,7 @@ internal static class OverlayPositioning
         }
         else
         {
-            pos = new Vector2(bounds.ScreenRight + xOffset, overlayY);
+            pos = new Vector2(bounds.BarScreenRight + xOffset, overlayY);
             pivot = Vector2.Zero;
         }
 

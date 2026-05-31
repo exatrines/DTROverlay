@@ -45,9 +45,16 @@ public readonly record struct VisibleDtrEntry
 
     public string HoverTooltip { get; init; }
 
+    public byte[] HoverTooltipSeStringData { get; init; }
+
     public PluginAffixRole AffixRole { get; init; }
 
-    public static VisibleDtrEntry FromPluginAffix(string text, string entryTitle, PluginAffixRole role) =>
+    public static VisibleDtrEntry FromPluginAffix(
+        string text,
+        string entryTitle,
+        PluginAffixRole role,
+        Action<DtrInteractionEvent> onClick = null,
+        byte[] hoverTooltipSeStringData = null) =>
         new()
         {
             Kind = VisibleDtrEntryKind.Text,
@@ -57,6 +64,8 @@ public readonly record struct VisibleDtrEntry
             ColorLayoutKey = entryTitle,
             DtrEntryTitle = entryTitle,
             AffixRole = role,
+            OnClick = onClick,
+            HoverTooltipSeStringData = hoverTooltipSeStringData ?? [],
         };
 
     public static VisibleDtrEntry FromText(
@@ -82,7 +91,8 @@ public readonly record struct VisibleDtrEntry
         SeString seString,
         Action<DtrInteractionEvent> onClick = null,
         string dtrEntryTitle = null,
-        string layoutKey = null) =>
+        string layoutKey = null,
+        SeString tooltip = null) =>
         new()
         {
             Kind = VisibleDtrEntryKind.SeString,
@@ -93,6 +103,7 @@ public readonly record struct VisibleDtrEntry
             LayoutKey = layoutKey ?? string.Empty,
             ColorLayoutKey = string.Empty,
             AffixRole = PluginAffixRole.None,
+            HoverTooltipSeStringData = EncodeTooltip(tooltip),
         };
 
     public static VisibleDtrEntry FromIcon(
@@ -123,4 +134,7 @@ public readonly record struct VisibleDtrEntry
             HoverTooltip = hoverTooltip ?? string.Empty,
             AffixRole = PluginAffixRole.None,
         };
+
+    private static byte[] EncodeTooltip(SeString tooltip) =>
+        tooltip != null && !string.IsNullOrEmpty(tooltip.TextValue) ? tooltip.Encode() : [];
 }
