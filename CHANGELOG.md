@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.0 — 2026-05-30
+
+- プラグイン manifest の文言を更新（Author / Punchline / Description）
+
 ## 1.0.0.0 — 2026-05-30
 
 初回リリース。
