@@ -1,0 +1,16 @@
+global using System;
+global using System.Collections.Generic;
+global using System.Numerics;
+global using Dalamud.Plugin;
+global using Dalamud.Bindings.ImGui;
+global using ECommons.DalamudServices;
+global using Dalamud;
+global using Dalamud.Interface;
+global using Dalamud.Interface.Colors;
+global using Dalamud.Game.Config;
+global using Dalamud.Game.Text;
+global using ECommons;
+global using ECommons.ImGuiMethods;
+global using ECommons.SimpleGui;
+global using ECommons.Configuration;
+global using static DTROverlay.Plugin;
