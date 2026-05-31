@@ -1,15 +1,23 @@
 using ECommons.Logging;
+using ECommons.SimpleGui;
 
 namespace DTROverlay;
 
 internal static class PluginCommands
 {
-    private const string Usage = "/dtroverlay on|off|toggle|edit — Control overlay (no args: open settings)";
+    private const string Usage = "/dtroverlay — toggle settings UI. Subcommands: on|off|toggle";
 
     public static void Handle(string command, string args)
     {
-        var parts = args.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var sub = parts.Length > 0 ? parts[0].ToLowerInvariant() : null;
+        args = args?.Trim() ?? "";
+        if (args.Length == 0)
+        {
+            EzConfigGui.Toggle();
+            return;
+        }
+
+        var parts = args.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var sub = parts[0].ToLowerInvariant();
 
         switch (sub)
         {
@@ -23,13 +31,6 @@ internal static class PluginCommands
                 return;
             case "toggle":
                 SetOverlayEnabled(!C.OverlayEnabled);
-                return;
-            case "edit":
-                ToggleEditMode();
-                return;
-            case null:
-            case "":
-                EzConfigGui.Open();
                 return;
             default:
                 DuoLog.Information(Usage);
@@ -48,20 +49,5 @@ internal static class PluginCommands
         C.OverlayEnabled = enabled;
         EzConfig.Save();
         DuoLog.Information($"DTR Overlay {(enabled ? "enabled" : "disabled")}.");
-    }
-
-    private static void ToggleEditMode()
-    {
-        if (C.FollowVanillaDtr)
-        {
-            DuoLog.Information("Edit mode is unavailable while Follow Vanilla DTR is enabled.");
-            return;
-        }
-
-        C.OverlayEditMode = !C.OverlayEditMode;
-        if (!C.OverlayEditMode)
-            EzConfig.Save();
-
-        DuoLog.Information($"DTR Overlay edit mode {(C.OverlayEditMode ? "enabled" : "disabled")}.");
     }
 }

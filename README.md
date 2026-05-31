@@ -10,9 +10,8 @@ https://raw.githubusercontent.com/exatrines/DalamudPlugins/refs/heads/main/plugi
 
 ## In-game
 
-- `/dtroverlay` — open settings
+- `/dtroverlay` — toggle settings UI
 - `/dtroverlay on|off|toggle` — enable or disable overlay
-- `/dtroverlay edit` — toggle edit mode (drag position)
 
 **Settings tab highlights**
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3.0 — 2026-05-30
+
+- Dalamud のメイン UI コールバックを登録（`OpenMainUi` 警告の解消）
+- `/dtroverlay` で設定 UI の表示/非表示をトグル
+- `/dtroverlay edit` サブコマンドを削除（編集モードは設定 UI から操作）
+
 ## 1.0.2.0 — 2026-05-30
 
 - プラグイン manifest の文言を更新（Author / Punchline / Description）
