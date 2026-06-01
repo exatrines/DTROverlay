@@ -50,17 +50,29 @@ public readonly record struct VisibleDtrEntry
 
     public PluginAffixRole AffixRole { get; init; }
 
+    public bool HasVisibleContent =>
+        Kind switch
+        {
+            VisibleDtrEntryKind.SeString => SeStringData is { Length: > 0 },
+            VisibleDtrEntryKind.Text => !string.IsNullOrEmpty(Text),
+            VisibleDtrEntryKind.Image => true,
+            _ => false,
+        };
+
     public static VisibleDtrEntry FromPluginAffix(
         string text,
         string entryTitle,
         PluginAffixRole role,
         Action<DtrInteractionEvent> onClick = null,
         byte[] hoverTooltipSeStringData = null,
-        string colorLayoutKey = null) =>
-        new()
+        string colorLayoutKey = null)
+    {
+        text ??= string.Empty;
+
+        return new()
         {
             Kind = VisibleDtrEntryKind.SeString,
-            SeStringData = new SeString(new TextPayload(text)).Encode(),
+            SeStringData = text.Length == 0 ? [] : new SeString(new TextPayload(text)).Encode(),
             Opacity = 1f,
             LayoutKey = colorLayoutKey ?? string.Empty,
             ColorLayoutKey = colorLayoutKey ?? entryTitle,
@@ -69,6 +81,7 @@ public readonly record struct VisibleDtrEntry
             OnClick = onClick,
             HoverTooltipSeStringData = hoverTooltipSeStringData ?? [],
         };
+    }
 
     public static VisibleDtrEntry FromText(
         string text,

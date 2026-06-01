@@ -94,26 +94,6 @@ public static class DtrOverlayCollector
         return new(pluginEntries, [], pluginEntries);
     }
 
-    private static IEnumerable<VisibleDtrEntry> CollectPluginEntry(DtrOverlayGroup group, string title)
-    {
-        var entry = Svc.DtrBar.Entries.FirstOrDefault(e => e.Title == title);
-        if (entry == null || !DtrEntryVisibility.ShouldShowInOverlay(entry, group) || entry.Text == null)
-            yield break;
-
-        var styleKey = GroupStyleKeys.PluginEntry(group.Id, entry.Title);
-        var affixes = PluginEntryAffixSettings.Get(group, entry.Title);
-        var tooltipData = EncodeDtrTooltip(entry.Tooltip);
-        var onClick = entry.OnClick;
-
-        if (!string.IsNullOrEmpty(affixes.Prefix))
-            yield return VisibleDtrEntry.FromPluginAffix(affixes.Prefix, entry.Title, PluginAffixRole.Prefix, onClick, tooltipData, styleKey);
-
-        yield return VisibleDtrEntry.FromSeString(entry.Text, onClick, entry.Title, styleKey, entry.Tooltip);
-
-        if (!string.IsNullOrEmpty(affixes.Suffix))
-            yield return VisibleDtrEntry.FromPluginAffix(affixes.Suffix, entry.Title, PluginAffixRole.Suffix, onClick, tooltipData, styleKey);
-    }
-
-    private static byte[] EncodeDtrTooltip(SeString tooltip) =>
-        tooltip != null && !string.IsNullOrEmpty(tooltip.TextValue) ? tooltip.Encode() : null;
+    private static IEnumerable<VisibleDtrEntry> CollectPluginEntry(DtrOverlayGroup group, string title) =>
+        PluginEntryRowLayout.CollectPluginEntry(group, title);
 }

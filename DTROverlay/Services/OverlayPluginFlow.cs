@@ -37,15 +37,20 @@ internal static class OverlayPluginFlow
     {
         var groups = new List<List<VisibleDtrEntry>>();
 
-        foreach (var entry in entries)
+        for (var i = 0; i < entries.Count;)
         {
-            var title = entry.DtrEntryTitle ?? string.Empty;
-            if (groups.Count == 0
-                || string.IsNullOrEmpty(title)
-                || groups[^1][0].DtrEntryTitle != title)
-                groups.Add([entry]);
-            else
-                groups[^1].Add(entry);
+            if (!PluginEntryRowLayout.TryGetPluginRowSpan(entries, i, out var rowStart, out var rowEnd))
+            {
+                i++;
+                continue;
+            }
+
+            var row = new List<VisibleDtrEntry>(rowEnd - rowStart + 1);
+            for (var j = rowStart; j <= rowEnd; j++)
+                row.Add(entries[j]);
+
+            groups.Add(row);
+            i = rowEnd + 1;
         }
 
         return groups;

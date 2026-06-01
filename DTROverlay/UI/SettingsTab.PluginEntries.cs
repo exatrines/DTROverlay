@@ -130,14 +130,20 @@ public static partial class SettingsTab
         var affixes = PluginEntryAffixSettings.GetOrCreate(group, entryTitle);
 
         ImGui.SetNextItemWidth(88f);
-        ImGui.InputTextWithHint($"##prefix_{entryTitle}", "prefix", ref affixes.Prefix, 128);
+        var prefixChanged = ImGui.InputTextWithHint($"##prefix_{entryTitle}", "prefix", ref affixes.Prefix, 128);
 
         ImGui.SameLine();
         ImGui.TextUnformatted("/");
 
         ImGui.SameLine();
         ImGui.SetNextItemWidth(88f);
-        ImGui.InputTextWithHint($"##suffix_{entryTitle}", "suffix", ref affixes.Suffix, 128);
+        var suffixChanged = ImGui.InputTextWithHint($"##suffix_{entryTitle}", "suffix", ref affixes.Suffix, 128);
+
+        if (!prefixChanged && !suffixChanged)
+            return;
+
+        affixes.Normalize();
+        EzConfig.Save();
     }
 
     private static void DrawSlotWidthControls(DtrOverlayGroup group, IReadOnlyDtrBarEntry entry)
