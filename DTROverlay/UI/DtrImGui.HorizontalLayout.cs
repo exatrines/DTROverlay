@@ -10,13 +10,14 @@ public static partial class DtrImGui
 
         if (nativeEntries.Count == 0)
         {
-            DrawHorizontalPluginRow(InsertPluginSeparators(pluginEntries));
+            DrawHorizontalPluginRow(
+                InsertPluginSeparators(InsertDivisionSeparatorIfNeeded(pluginEntries)));
             return;
         }
 
         if (pluginEntries.Count == 0)
         {
-            DrawHorizontalRowLeftToRight(nativeEntries);
+            DrawHorizontalRow(nativeEntries, leftToRight: true);
             return;
         }
 
@@ -44,16 +45,17 @@ public static partial class DtrImGui
         IReadOnlyList<VisibleDtrEntry> nativeEntries,
         IReadOnlyList<VisibleDtrEntry> pluginEntries)
     {
-        var showDivisionSeparator = ShouldShowDivisionSeparator(true, true);
-        var continuePluginsOnSameLine = showDivisionSeparator;
+        var insertDivisionSeparator = DtrSeparators.ShouldInsertDivision(true, true);
+        var continuePluginsOnSameLine = insertDivisionSeparator;
+        var pluginsLeftToRight = OverlayPluginFlow.UseHorizontalLeftToRight();
 
-        if (OverlayPluginFlow.UseHorizontalLeftToRight || UsesNewLineDivision)
+        if (pluginsLeftToRight)
         {
-            DrawHorizontalRowLeftToRight(nativeEntries);
-            if (showDivisionSeparator)
+            DrawHorizontalRow(nativeEntries, leftToRight: true);
+            if (insertDivisionSeparator)
             {
                 ImGui.SameLine(0f, DtrStyle.EntrySpacing);
-                DrawEntry(CreateDivisionSeparator());
+                DrawEntry(DtrSeparators.CreateDivision());
             }
 
             DrawHorizontalPluginRow(pluginEntries, sameLineBefore: continuePluginsOnSameLine);
@@ -61,93 +63,68 @@ public static partial class DtrImGui
         }
 
         DrawHorizontalPluginRow(pluginEntries);
-        if (showDivisionSeparator)
+        if (insertDivisionSeparator)
         {
             ImGui.SameLine(0f, DtrStyle.EntrySpacing);
-            DrawEntry(CreateDivisionSeparator());
+            DrawEntry(DtrSeparators.CreateDivision());
         }
 
-        DrawHorizontalRowLeftToRight(nativeEntries, sameLineBefore: continuePluginsOnSameLine);
+        DrawHorizontalRow(nativeEntries, leftToRight: true, sameLineBefore: continuePluginsOnSameLine);
     }
 
     private static void DrawHorizontalPluginRow(
         IReadOnlyList<VisibleDtrEntry> pluginEntries,
-        bool sameLineBefore = false)
-    {
-        if (OverlayPluginFlow.UseHorizontalLeftToRight)
-            DrawHorizontalRowLeftToRight(pluginEntries, sameLineBefore);
-        else
-            DrawHorizontalRowRightToLeft(pluginEntries, sameLineBefore);
-    }
+        bool sameLineBefore = false) =>
+        DrawHorizontalRow(
+            pluginEntries,
+            OverlayPluginFlow.UseHorizontalLeftToRight(),
+            sameLineBefore);
 
-    private static void DrawHorizontalRow(IReadOnlyList<VisibleDtrEntry> entries) =>
-        DrawHorizontalPluginRow(entries);
-
-    private static void DrawHorizontalRowLeftToRight(
+    private static void DrawHorizontalRow(
         IReadOnlyList<VisibleDtrEntry> entries,
+        bool leftToRight,
         bool sameLineBefore = false)
     {
         var needsSpacing = sameLineBefore;
+        var index = leftToRight ? 0 : entries.Count - 1;
 
-        for (var i = 0; i < entries.Count;)
+        while (leftToRight ? index < entries.Count : index >= 0)
         {
-            if (TryGetPluginEntryGroupForward(entries, i, out var groupStart, out _, out var groupEnd))
+            if (TryGetPluginEntryGroupAtIndex(entries, index, leftToRight, out var groupStart, out _, out var groupEnd))
             {
                 ImGui.PushID(groupStart);
                 DrawHorizontalEntryGroup(entries, groupStart, groupEnd, needsSpacing);
                 ImGui.PopID();
                 needsSpacing = true;
-                i = groupEnd + 1;
+                index = leftToRight ? groupEnd + 1 : groupStart - 1;
                 continue;
             }
 
-            ImGui.PushID(i);
+            ImGui.PushID(index);
 
             if (needsSpacing)
             {
-                var spacing = entries[i].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
+                var spacing = entries[index].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
                 ImGui.SameLine(0f, spacing);
             }
 
-            DrawEntry(entries[i]);
+            DrawEntry(entries[index]);
             ImGui.PopID();
             needsSpacing = true;
-            i++;
+            index += leftToRight ? 1 : -1;
         }
     }
 
-    private static void DrawHorizontalRowRightToLeft(
+    private static bool TryGetPluginEntryGroupAtIndex(
         IReadOnlyList<VisibleDtrEntry> entries,
-        bool sameLineBefore = false)
-    {
-        var needsSpacing = sameLineBefore;
-
-        for (var i = entries.Count - 1; i >= 0;)
-        {
-            if (TryGetPluginEntryGroupAt(entries, i, out var groupStart, out _, out var groupEnd))
-            {
-                ImGui.PushID(groupStart);
-                DrawHorizontalEntryGroup(entries, groupStart, groupEnd, needsSpacing);
-                ImGui.PopID();
-                needsSpacing = true;
-                i = groupStart - 1;
-                continue;
-            }
-
-            ImGui.PushID(i);
-
-            if (needsSpacing)
-            {
-                var spacing = entries[i].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
-                ImGui.SameLine(0f, spacing);
-            }
-
-            DrawEntry(entries[i]);
-            ImGui.PopID();
-            needsSpacing = true;
-            i--;
-        }
-    }
+        int index,
+        bool leftToRight,
+        out int groupStart,
+        out int contentIndex,
+        out int groupEnd) =>
+        leftToRight
+            ? TryGetPluginEntryGroupForward(entries, index, out groupStart, out contentIndex, out groupEnd)
+            : TryGetPluginEntryGroupAt(entries, index, out groupStart, out contentIndex, out groupEnd);
 
     private static void DrawHorizontalEntryGroup(
         IReadOnlyList<VisibleDtrEntry> entries,
@@ -168,69 +145,36 @@ public static partial class DtrImGui
     }
 
     private static float MeasureHorizontalRowWidth(IReadOnlyList<VisibleDtrEntry> entries) =>
-        OverlayPluginFlow.UseHorizontalLeftToRight
-            ? MeasureHorizontalRowWidthLeftToRight(entries)
-            : MeasureHorizontalRowWidthRightToLeft(entries);
+        MeasureHorizontalRowWidth(entries, OverlayPluginFlow.UseHorizontalLeftToRight());
 
-    private static float MeasureHorizontalRowWidthLeftToRight(IReadOnlyList<VisibleDtrEntry> entries)
+    private static float MeasureHorizontalRowWidth(IReadOnlyList<VisibleDtrEntry> entries, bool leftToRight)
     {
         if (entries.Count == 0)
             return 0f;
 
         var width = 0f;
         var needsSpacing = false;
+        var index = leftToRight ? 0 : entries.Count - 1;
 
-        for (var i = 0; i < entries.Count;)
+        while (leftToRight ? index < entries.Count : index >= 0)
         {
-            if (TryGetPluginEntryGroupForward(entries, i, out var groupStart, out _, out var groupEnd))
+            if (TryGetPluginEntryGroupAtIndex(entries, index, leftToRight, out var groupStart, out _, out var groupEnd))
             {
                 if (needsSpacing)
                     width += entries[groupStart].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
 
                 width += MeasurePluginEntryGroupWidth(entries, groupStart, groupEnd);
                 needsSpacing = true;
-                i = groupEnd + 1;
+                index = leftToRight ? groupEnd + 1 : groupStart - 1;
                 continue;
             }
 
             if (needsSpacing)
-                width += entries[i].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
+                width += entries[index].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
 
-            width += MeasureEntry(entries[i]).X;
+            width += MeasureEntry(entries[index]).X;
             needsSpacing = true;
-            i++;
-        }
-
-        return width;
-    }
-
-    private static float MeasureHorizontalRowWidthRightToLeft(IReadOnlyList<VisibleDtrEntry> entries)
-    {
-        if (entries.Count == 0)
-            return 0f;
-
-        var width = 0f;
-        var needsSpacing = false;
-
-        for (var i = entries.Count - 1; i >= 0;)
-        {
-            if (TryGetPluginEntryGroupAt(entries, i, out var groupStart, out _, out var groupEnd))
-            {
-                if (needsSpacing)
-                    width += entries[groupStart].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
-
-                width += MeasurePluginEntryGroupWidth(entries, groupStart, groupEnd);
-                needsSpacing = true;
-                i = groupStart - 1;
-                continue;
-            }
-
-            if (needsSpacing)
-                width += entries[i].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
-
-            width += MeasureEntry(entries[i]).X;
-            needsSpacing = true;
-            i--;
+            index += leftToRight ? 1 : -1;
         }
 
         return width;

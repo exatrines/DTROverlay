@@ -8,17 +8,9 @@ public static partial class SettingsTab
         ImGui.Spacing();
 
         DrawShortcutsSection();
-        DrawLayoutSection();
-        DrawAppearanceSection();
-
-        if (!C.FollowVanillaDtr)
-        {
-            DrawPositionSection();
-            DrawServerInfoSection();
-        }
-
-        DrawEntriesSection();
-        DrawTooltipSection();
+        DrawFollowVanillaSection();
         DrawOptionSection();
+        ImGui.Spacing();
+        DrawSettingsSubTabs();
     }
 }

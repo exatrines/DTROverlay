@@ -1,6 +1,7 @@
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 
 namespace DTROverlay.Services;
 
@@ -54,14 +55,15 @@ public readonly record struct VisibleDtrEntry
         string entryTitle,
         PluginAffixRole role,
         Action<DtrInteractionEvent> onClick = null,
-        byte[] hoverTooltipSeStringData = null) =>
+        byte[] hoverTooltipSeStringData = null,
+        string colorLayoutKey = null) =>
         new()
         {
-            Kind = VisibleDtrEntryKind.Text,
-            Text = text,
+            Kind = VisibleDtrEntryKind.SeString,
+            SeStringData = new SeString(new TextPayload(text)).Encode(),
             Opacity = 1f,
-            LayoutKey = string.Empty,
-            ColorLayoutKey = entryTitle,
+            LayoutKey = colorLayoutKey ?? string.Empty,
+            ColorLayoutKey = colorLayoutKey ?? entryTitle,
             DtrEntryTitle = entryTitle,
             AffixRole = role,
             OnClick = onClick,

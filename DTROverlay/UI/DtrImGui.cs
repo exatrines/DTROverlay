@@ -53,14 +53,26 @@ public static partial class DtrImGui
         DrawHorizontalEntriesCore(entries);
     }
 
-    public static float GetHorizontalRowLineHeight() =>
-        CachedLineHeight > 0f
-            ? CachedLineHeight
+    public static float GetHorizontalRowLineHeight()
+    {
+        var groupId = OverlayStyleContext.Group?.Id;
+        if (!string.IsNullOrEmpty(groupId)
+            && CachedLineHeightByGroupId.TryGetValue(groupId, out var cached)
+            && cached > 0f)
+            return cached;
+
+        return ImGui.GetFontSize() > 0f
+            ? ImGui.GetFontSize()
             : UiBuilder.DefaultFont.FontSize * FollowVanillaFontScale.ActiveScale;
+    }
 
     public static void UpdateCachedLineHeight()
     {
-        CachedLineHeight = ImGui.GetFontSize();
+        var groupId = OverlayStyleContext.Group?.Id;
+        if (string.IsNullOrEmpty(groupId))
+            return;
+
+        CachedLineHeightByGroupId[groupId] = ImGui.GetFontSize();
     }
 
     /// <summary>Matches vertical offset applied in <see cref="GetAlignedPos"/> for drawn text.</summary>
@@ -82,5 +94,5 @@ public static partial class DtrImGui
     public static float EstimateOverlayContentHeight() =>
         FollowVanillaDtrMode.IsActive
             ? FollowVanillaFontScale.EstimateContentHeight()
-            : UiBuilder.DefaultFont.FontSize * C.OverlayFontSizeScale * 0.86f;
+            : UiBuilder.DefaultFont.FontSize * OverlayStyleResolver.GetEffectiveOverlayFontScale() * 0.86f;
 }

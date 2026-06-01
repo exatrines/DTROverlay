@@ -15,7 +15,6 @@ public sealed class Plugin : IDalamudPlugin
     internal static Plugin P = null!;
 
     private readonly WindowSystem _overlayWindows = new("DTROverlayOverlay");
-    private readonly OverlayWindow _overlay = new();
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
@@ -24,10 +23,11 @@ public sealed class Plugin : IDalamudPlugin
 
         C = EzConfig.Init<Configuration>();
         MigrateConfiguration(C);
+        DtrOverlayGroups.EnsureInitialized();
         EzConfigGui.Init(UI.ConfigWindow.Draw, windowType: EzConfigGui.WindowType.Both);
         ConfigureConfigWindow();
 
-        _overlayWindows.AddWindow(_overlay);
+        OverlayWindowHost.Initialize(_overlayWindows);
         DtrNativePluginHider.Register();
         Svc.PluginInterface.UiBuilder.Draw += DrawOverlay;
 
@@ -58,7 +58,7 @@ public sealed class Plugin : IDalamudPlugin
         config.TooltipPositionMigrated = true;
     }
 
-    private void DrawOverlay() => _overlayWindows.Draw();
+    private void DrawOverlay() => OverlayWindowHost.Draw();
 
     public void Dispose()
     {

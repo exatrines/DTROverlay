@@ -29,7 +29,7 @@ internal static partial class NativeDtrReader
         var dtr = (AddonDtr*)atk;
         const float opacity = 1f;
 
-        if (C.ServerInfoDisplayMode == ServerInfoDisplayMode.Text)
+        if (OverlayGroupSettings.GetServerInfoDisplayMode() == ServerInfoDisplayMode.Text)
         {
             BuildServerInfoTextSegments(dtr, atk, segments, opacity);
             return segments;
@@ -88,17 +88,17 @@ internal static partial class NativeDtrReader
     }
 
     private static string GetNativeGroupColorLayoutKey() =>
-        EntryFixedWidth.IsColorEnabled(OverlayEntryIds.ServerInfoTextGroup)
-            ? OverlayEntryIds.ServerInfoTextGroup
-            : string.Empty;
+        OverlayStyleKeys.GetNativeTextColorLayoutKey();
 
     private static string GetTextModeColorLayoutKey() =>
-        C.ServerInfoDisplayMode == ServerInfoDisplayMode.Text
+        OverlayGroupSettings.GetServerInfoDisplayMode() == ServerInfoDisplayMode.Text
             ? GetNativeGroupColorLayoutKey()
             : string.Empty;
 
     private static string GetNativePartLayoutKey(string partId) =>
-        C.ServerInfoDisplayMode == ServerInfoDisplayMode.Text ? string.Empty : partId;
+        OverlayGroupSettings.GetServerInfoDisplayMode() == ServerInfoDisplayMode.Text
+            ? string.Empty
+            : partId;
 
     private static unsafe void AddWorldTextSegment(AddonDtr* dtr, List<VisibleDtrEntry> segments, float opacity)
     {
@@ -370,13 +370,7 @@ internal static partial class NativeDtrReader
 
     private static void MaybeAddNativeSeparator(List<VisibleDtrEntry> segments, float opacity)
     {
-        if (DtrSeparatorStyle.IsNativeVisible && segments.Count > 0)
-            segments.Add(CreateNativeSeparator(opacity));
+        if (segments.Count > 0)
+            segments.Add(DtrSeparators.CreateNative(opacity));
     }
-
-    private static VisibleDtrEntry CreateNativeSeparator(float opacity) =>
-        VisibleDtrEntry.FromText(
-            "|",
-            opacity: opacity,
-            colorLayoutKey: OverlayEntryIds.NativeSeparatorColor);
 }

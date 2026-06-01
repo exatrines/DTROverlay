@@ -2,25 +2,25 @@ namespace DTROverlay.Services;
 
 internal static class PluginEntryAffixSettings
 {
-    public static PluginEntryAffixes Get(string entryTitle) =>
-        C.PluginEntryAffixesByTitle.TryGetValue(entryTitle, out var affixes)
+    public static PluginEntryAffixes Get(DtrOverlayGroup group, string entryTitle) =>
+        group.PluginEntryAffixesByTitle.TryGetValue(entryTitle, out var affixes)
             ? affixes
             : Empty;
 
-    public static PluginEntryAffixes GetOrCreate(string entryTitle)
+    public static PluginEntryAffixes GetOrCreate(DtrOverlayGroup group, string entryTitle)
     {
-        if (!C.PluginEntryAffixesByTitle.TryGetValue(entryTitle, out var affixes))
+        if (!group.PluginEntryAffixesByTitle.TryGetValue(entryTitle, out var affixes))
         {
             affixes = new PluginEntryAffixes();
-            C.PluginEntryAffixesByTitle[entryTitle] = affixes;
+            group.PluginEntryAffixesByTitle[entryTitle] = affixes;
         }
 
         return affixes;
     }
 
-    public static bool HasAny(string entryTitle)
+    public static bool HasAny(DtrOverlayGroup group, string entryTitle)
     {
-        var affixes = Get(entryTitle);
+        var affixes = Get(group, entryTitle);
         return !string.IsNullOrEmpty(affixes.Prefix) || !string.IsNullOrEmpty(affixes.Suffix);
     }
 

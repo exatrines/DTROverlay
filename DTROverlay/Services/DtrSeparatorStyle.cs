@@ -4,35 +4,55 @@ namespace DTROverlay.Services;
 
 internal static class DtrSeparatorStyle
 {
-    public static bool IsPluginVisible => C.ShowPluginEntrySeparators;
-
-    public static bool IsNativeVisible => C.ShowNativeEntrySeparators;
-
     public static bool IsSeparatorKey(string layoutKey) =>
         layoutKey is OverlayEntryIds.PluginSeparatorColor
             or OverlayEntryIds.NativeSeparatorColor
             or OverlayEntryIds.DivisionSeparatorColor;
 
+    public static bool ShowsBar(string layoutKey) =>
+        layoutKey switch
+        {
+            OverlayEntryIds.PluginSeparatorColor => OverlayGroupSettings.ShowsPluginSeparatorBar(),
+            OverlayEntryIds.NativeSeparatorColor => OverlayGroupSettings.ShowsNativeSeparatorBar(),
+            OverlayEntryIds.DivisionSeparatorColor => OverlayGroupSettings.ShowsDivisionSeparatorBar(),
+            _ => false,
+        };
+
+    public static string GetDisplayGlyph(string layoutKey) =>
+        ShowsBar(layoutKey) ? "|" : DtrSeparators.SlotGlyph;
+
+    public static float ResolveSlotWidth(string layoutKey, float measuredWidth)
+    {
+        var widthPx = OverlayStyleResolver.GetEffectiveSeparatorSlotWidthPx();
+        if (!IsSeparatorKey(layoutKey) || widthPx <= 0)
+            return measuredWidth;
+
+        return DtrEntrySlotWidth.ScaleToOverlayPixels(widthPx);
+    }
+
     public static Vector4 GetTextColor(string layoutKey) =>
-        EntryFixedWidth.IsColorEnabled(layoutKey)
-        && C.FixedWidthTextColors.TryGetValue(layoutKey, out var color)
-            ? color
-            : EntryFixedWidth.GetDefaultTextColor();
+        EntryFixedWidth.GetTextColor(layoutKey);
 
     public static Vector4 GetOutlineColor(string layoutKey) =>
-        EntryFixedWidth.IsColorEnabled(layoutKey)
-        && C.FixedWidthOutlineColors.TryGetValue(layoutKey, out var color)
-            ? color
-            : EntryFixedWidth.GetDefaultOutlineColor();
+        EntryFixedWidth.GetOutlineColor(layoutKey);
 
-    public static void ResetColors(string layoutKey)
-    {
-        if (string.IsNullOrEmpty(layoutKey))
-            return;
+    public static Vector4 GetShadowColor(string layoutKey) =>
+        EntryFixedWidth.GetShadowColor(layoutKey);
 
-        C.FixedWidthTextColors[layoutKey] = EntryFixedWidth.GetDefaultTextColor();
-        C.FixedWidthOutlineColors[layoutKey] = EntryFixedWidth.GetDefaultOutlineColor();
-    }
+    public static float GetEdgeStrength(string layoutKey) =>
+        EntryFixedWidth.GetEdgeStrength(layoutKey);
+
+    public static float GetShadowThickness(string layoutKey) =>
+        EntryFixedWidth.GetShadowThickness(layoutKey);
+
+    public static bool IsEdgeEnabled(string layoutKey) =>
+        EntryFixedWidth.IsEdgeEnabled(layoutKey);
+
+    public static bool IsShadowEnabled(string layoutKey) =>
+        EntryFixedWidth.IsShadowEnabled(layoutKey);
+
+    public static void ResetColors(string layoutKey) =>
+        EntryFixedWidth.ResetColorsToDefault(layoutKey);
 
     public static void MigrateVisibilitySplit()
     {
@@ -41,5 +61,14 @@ internal static class DtrSeparatorStyle
 
         C.ShowNativeEntrySeparators = C.ShowPluginEntrySeparators;
         C.SeparatorVisibilitySplitMigrated = true;
+    }
+
+    public static void MigrateDivisionSeparatorBar()
+    {
+        if (C.DivisionSeparatorBarMigrated)
+            return;
+
+        C.ShowDivisionSeparatorBar = C.ShowPluginEntrySeparators;
+        C.DivisionSeparatorBarMigrated = true;
     }
 }
