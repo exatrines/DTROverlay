@@ -4,7 +4,7 @@
 
     <PropertyGroup>
         <Authors>exatrines</Authors>
-        <Version>1.2.0.0</Version>
+        <Version>1.2.0.1</Version>
         <Description>ImGui overlay for Server Info Bar entries</Description>
         <PackageProjectUrl>https://github.com/exatrines/DTROverlay</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
