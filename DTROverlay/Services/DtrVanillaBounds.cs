@@ -33,6 +33,48 @@ internal static unsafe class DtrVanillaBounds
 {
     private const uint DalamudNodeIdBase = 1000;
 
+    // _DTR ノードツリーの走査は重く、Follow Vanilla 描画中は 1 フレームに複数回（座標系違いで最大 3 回）
+    // 呼ばれる。同一フレーム内の結果は不変なので、フレーム番号でキャッシュして走査回数を 1 回に抑える。
+    private static int _cachedFrame = -1;
+    private static bool _screenComputed;
+    private static bool _screenSuccess;
+    private static VanillaDtrBounds _screenBounds;
+    private static bool _localComputed;
+    private static bool _localSuccess;
+    private static VanillaDtrBounds _localBounds;
+
+    public static bool TryGet(out VanillaDtrBounds bounds, bool useScreenCoordinates = false)
+    {
+        var frame = ImGui.GetFrameCount();
+        if (frame != _cachedFrame)
+        {
+            _cachedFrame = frame;
+            _screenComputed = false;
+            _localComputed = false;
+        }
+
+        if (useScreenCoordinates)
+        {
+            if (!_screenComputed)
+            {
+                _screenSuccess = TryGetUncached(out _screenBounds, true);
+                _screenComputed = true;
+            }
+
+            bounds = _screenBounds;
+            return _screenSuccess;
+        }
+
+        if (!_localComputed)
+        {
+            _localSuccess = TryGetUncached(out _localBounds, false);
+            _localComputed = true;
+        }
+
+        bounds = _localBounds;
+        return _localSuccess;
+    }
+
     public static bool IsAddonVisible()
     {
         if (!TryGetAddon(out var addon))
@@ -41,7 +83,7 @@ internal static unsafe class DtrVanillaBounds
         return GenericHelpers.IsAddonReady(addon);
     }
 
-    public static bool TryGet(out VanillaDtrBounds bounds, bool useScreenCoordinates = false)
+    private static bool TryGetUncached(out VanillaDtrBounds bounds, bool useScreenCoordinates = false)
     {
         bounds = default;
 
