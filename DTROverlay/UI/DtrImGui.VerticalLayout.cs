@@ -13,7 +13,7 @@ public static partial class DtrImGui
 
         var rowWidths = new List<float>();
         if (nativeEntries.Count > 0)
-            rowWidths.Add(MeasureHorizontalRowWidthLeftToRight(nativeEntries));
+            rowWidths.Add(MeasureHorizontalRowWidth(nativeEntries, leftToRight: true));
 
         var orderedPluginEntries = OverlayPluginFlow.OrderForVertical(pluginEntries);
 
@@ -53,7 +53,7 @@ public static partial class DtrImGui
             ImGui.SetCursorPos(new Vector2(
                 GetRowStartX(contentMin.X, maxWidth, rowWidths[rowIndex], alignment),
                 y));
-            DrawHorizontalRowLeftToRight(nativeEntries);
+            DrawHorizontalRow(nativeEntries, leftToRight: true);
             y = ImGui.GetCursorPosY();
             rowIndex++;
 

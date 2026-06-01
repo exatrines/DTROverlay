@@ -47,11 +47,11 @@ public static partial class DtrImGui
         }
     }
 
-    private static float CachedLineHeight = -1f;
+    private static readonly Dictionary<string, float> CachedLineHeightByGroupId = new(StringComparer.Ordinal);
 
     private static float ManualEstimateTextDrawTopInset()
     {
-        var lineHeight = UiBuilder.DefaultFont.FontSize * C.OverlayFontSizeScale;
+        var lineHeight = UiBuilder.DefaultFont.FontSize * OverlayStyleResolver.GetEffectiveOverlayFontScale();
         var contentHeight = lineHeight * 0.86f;
         return (lineHeight - contentHeight) * 0.5f;
     }

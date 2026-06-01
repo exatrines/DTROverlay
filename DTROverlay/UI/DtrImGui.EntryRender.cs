@@ -1,3 +1,4 @@
+using System.Linq;
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Interface.ImGuiSeStringRenderer;
 using Dalamud.Interface.Utility;
@@ -10,23 +11,31 @@ public static partial class DtrImGui
     private static Vector2 MeasureEntry(VisibleDtrEntry entry)
     {
         var content = MeasureEntryContent(entry);
-        return new Vector2(EntryFixedWidth.ResolveWidth(entry.LayoutKey, content.X), content.Y);
+        return new Vector2(EntryFixedWidth.ResolveWidth(ResolveLayoutKey(entry), content.X), content.Y);
     }
 
-    private static Vector2 MeasureEntryContent(VisibleDtrEntry entry) =>
-        entry.Kind switch
+    private static string ResolveLayoutKey(VisibleDtrEntry entry) =>
+        !string.IsNullOrEmpty(entry.LayoutKey)
+            ? entry.LayoutKey
+            : entry.ColorLayoutKey;
+
+    private static Vector2 MeasureEntryContent(VisibleDtrEntry entry)
+    {
+        var colorLayoutKey = ResolveColorLayoutKey(entry);
+        return entry.Kind switch
         {
-            VisibleDtrEntryKind.SeString => MeasureSeString(entry.SeStringData),
+            VisibleDtrEntryKind.SeString => MeasureSeString(entry.SeStringData, colorLayoutKey),
             VisibleDtrEntryKind.Image => MeasureImage(entry.Image, entry.ImageScale),
             _ => MeasureText(entry.Text),
         };
+    }
 
-    private static Vector2 MeasureSeString(byte[] data)
+    private static Vector2 MeasureSeString(byte[] data, string colorLayoutKey)
     {
         if (data.Length == 0)
             return Vector2.Zero;
 
-        var drawParams = CreateSeStringDrawParams();
+        var drawParams = CreateSeStringDrawParams(colorLayoutKey, 1f);
         drawParams.TargetDrawList = ImGui.GetWindowDrawList();
         drawParams.ScreenOffset = new Vector2(-10000f, -10000f);
 
@@ -50,6 +59,7 @@ public static partial class DtrImGui
 
     private static void DrawEntry(VisibleDtrEntry entry)
     {
+        var layoutKey = ResolveLayoutKey(entry);
         var colorLayoutKey = ResolveColorLayoutKey(entry);
 
         switch (entry.Kind)
@@ -60,7 +70,7 @@ public static partial class DtrImGui
                     entry.OnClick,
                     entry.DtrEntryTitle,
                     entry.Opacity,
-                    entry.LayoutKey,
+                    layoutKey,
                     colorLayoutKey,
                     entry.HoverTooltipSeStringData);
                 break;
@@ -76,10 +86,23 @@ public static partial class DtrImGui
                     entry.HoverTooltipSeStringData);
                 break;
             default:
+                if (DtrSeparatorStyle.IsSeparatorKey(layoutKey))
+                {
+                    DrawSeparatorSlot(
+                        layoutKey,
+                        colorLayoutKey,
+                        entry.Opacity,
+                        entry.HoverTooltip,
+                        entry.OnClick,
+                        entry.DtrEntryTitle,
+                        entry.HoverTooltipSeStringData);
+                    break;
+                }
+
                 DrawStyledText(
                     entry.Text,
                     entry.Opacity,
-                    entry.LayoutKey,
+                    layoutKey,
                     colorLayoutKey,
                     entry.HoverTooltip,
                     entry.OnClick,
@@ -89,17 +112,44 @@ public static partial class DtrImGui
         }
     }
 
-    private static SeStringDrawParams CreateSeStringDrawParams()
+    private static SeStringDrawParams CreateSeStringDrawParams(string colorLayoutKey, float opacity)
     {
+        var edgeEnabled = EntryFixedWidth.IsEdgeEnabled(colorLayoutKey);
         return new SeStringDrawParams
         {
             Font = ImGui.GetFont(),
             FontSize = ImGui.GetFontSize(),
             LineHeight = 1f,
-            Edge = false,
-            Color = EntryFixedWidth.GetDefaultTextColor().ToUint(),
+            Edge = edgeEnabled,
+            Shadow = false,
+            ForceEdgeColor = edgeEnabled,
+            EdgeStrength = EntryFixedWidth.GetEdgeStrength(colorLayoutKey),
+            Color = ApplyOpacity(EntryFixedWidth.GetTextColor(colorLayoutKey), opacity),
+            EdgeColor = ApplyOpacity(EntryFixedWidth.GetOutlineColor(colorLayoutKey), opacity),
+            ShadowColor = ApplyOpacity(EntryFixedWidth.GetShadowColor(colorLayoutKey), opacity),
         };
     }
+
+    private static void DrawSeStringWithEffects(byte[] data, string colorLayoutKey, float opacity, Vector2 pos)
+    {
+        var drawParams = CreateSeStringDrawParams(colorLayoutKey, opacity);
+        drawParams.TargetDrawList = ImGui.GetWindowDrawList();
+
+        if (EntryFixedWidth.IsShadowEnabled(colorLayoutKey))
+        {
+            SeStringSoftShadow.Draw(
+                data,
+                drawParams,
+                pos,
+                EntryFixedWidth.GetShadowThickness(colorLayoutKey));
+        }
+
+        var finalParams = drawParams;
+        finalParams.ScreenOffset = pos;
+        ImGuiHelpers.SeStringWrapped(data, finalParams);
+    }
+
+    private static DtrOverlayGroup TooltipGroup => OverlayStyleContext.Group;
 
     private static SeStringDrawParams CreateTooltipSeStringDrawParams() =>
         new SeStringDrawParams
@@ -108,7 +158,7 @@ public static partial class DtrImGui
             FontSize = ImGui.GetFontSize(),
             LineHeight = 1f,
             Edge = false,
-            Color = ImGui.ColorConvertFloat4ToU32(C.TooltipTextColor),
+            Color = ImGui.ColorConvertFloat4ToU32(OverlayTooltipResolver.GetEffectiveTextColor(TooltipGroup)),
         };
 
     private static void DrawStyledSeString(
@@ -123,11 +173,11 @@ public static partial class DtrImGui
         if (data.Length == 0)
             return;
 
-        var drawParams = CreateSeStringDrawParams();
-        drawParams.TargetDrawList = ImGui.GetWindowDrawList();
-        drawParams.ScreenOffset = new Vector2(-10000f, -10000f);
+        var measureParams = CreateSeStringDrawParams(colorLayoutKey, 1f);
+        measureParams.TargetDrawList = ImGui.GetWindowDrawList();
+        measureParams.ScreenOffset = new Vector2(-10000f, -10000f);
 
-        var measured = ImGuiHelpers.SeStringWrapped(data, drawParams);
+        var measured = ImGuiHelpers.SeStringWrapped(data, measureParams);
         var contentSize = measured.Size;
         if (contentSize == Vector2.Zero)
             return;
@@ -136,22 +186,7 @@ public static partial class DtrImGui
         var slotSize = new Vector2(slotWidth, LineHeight);
 
         if (opacity > 0f)
-        {
-            var pos = GetAlignedPos(contentSize, layoutKey);
-            var outlineColor = ApplyOpacity(EntryFixedWidth.GetOutlineColor(colorLayoutKey), opacity);
-            var textColor = ApplyOpacity(EntryFixedWidth.GetTextColor(colorLayoutKey), opacity);
-
-            foreach (var offset in DtrStyle.OutlineOffsets)
-            {
-                drawParams.ScreenOffset = pos + offset;
-                drawParams.Color = outlineColor;
-                ImGuiHelpers.SeStringWrapped(data, drawParams);
-            }
-
-            drawParams.ScreenOffset = pos;
-            drawParams.Color = textColor;
-            ImGuiHelpers.SeStringWrapped(data, drawParams);
-        }
+            DrawSeStringWithEffects(data, colorLayoutKey, opacity, GetAlignedPos(contentSize, layoutKey));
 
         AdvanceEntry(slotSize, onClick, dtrEntryTitle, hoverTooltipSeStringData: hoverTooltipSeStringData);
     }
@@ -188,6 +223,39 @@ public static partial class DtrImGui
         AdvanceEntry(slotSize, onClick, dtrEntryTitle, hoverTooltip, hoverTooltipSeStringData);
     }
 
+    private static void DrawSeparatorSlot(
+        string layoutKey,
+        string colorLayoutKey,
+        float opacity,
+        string hoverTooltip,
+        Action<DtrInteractionEvent> onClick,
+        string dtrEntryTitle,
+        byte[] hoverTooltipSeStringData)
+    {
+        var displayText = DtrSeparatorStyle.GetDisplayGlyph(layoutKey);
+        var contentSize = string.IsNullOrEmpty(displayText)
+            ? Vector2.Zero
+            : ImGui.CalcTextSize(displayText);
+        var slotWidth = EntryFixedWidth.ResolveWidth(layoutKey, contentSize.X);
+        var slotSize = new Vector2(slotWidth, LineHeight);
+
+        if (opacity > 0f && !string.IsNullOrEmpty(displayText))
+        {
+            var pos = GetAlignedPos(contentSize, layoutKey);
+            var drawList = ImGui.GetWindowDrawList();
+            var font = ImGui.GetFont();
+            var fontSize = ImGui.GetFontSize();
+            var textColor = ApplyOpacity(EntryFixedWidth.GetTextColor(colorLayoutKey), opacity);
+
+            DrawManualSoftShadow(drawList, font, fontSize, pos, colorLayoutKey, opacity, displayText);
+            DrawManualOutline(drawList, font, fontSize, pos, colorLayoutKey, opacity, displayText);
+
+            drawList.AddText(font, fontSize, pos, textColor, displayText);
+        }
+
+        AdvanceEntry(slotSize, onClick, dtrEntryTitle, hoverTooltip, hoverTooltipSeStringData);
+    }
+
     private static void DrawStyledText(
         string text,
         float opacity,
@@ -211,16 +279,59 @@ public static partial class DtrImGui
         {
             var pos = GetAlignedPos(contentSize, layoutKey);
             var drawList = ImGui.GetWindowDrawList();
-            var outlineColor = ApplyOpacity(EntryFixedWidth.GetOutlineColor(colorLayoutKey), opacity);
             var textColor = ApplyOpacity(EntryFixedWidth.GetTextColor(colorLayoutKey), opacity);
 
-            foreach (var offset in DtrStyle.OutlineOffsets)
-                drawList.AddText(font, fontSize, pos + offset, outlineColor, text);
+            DrawManualSoftShadow(drawList, font, fontSize, pos, colorLayoutKey, opacity, text);
+            DrawManualOutline(drawList, font, fontSize, pos, colorLayoutKey, opacity, text);
 
             drawList.AddText(font, fontSize, pos, textColor, text);
         }
 
         AdvanceEntry(slotSize, onClick, dtrEntryTitle, hoverTooltip, hoverTooltipSeStringData);
+    }
+
+    private static void DrawManualSoftShadow(
+        ImDrawListPtr drawList,
+        ImFontPtr font,
+        float fontSize,
+        Vector2 pos,
+        string colorLayoutKey,
+        float opacity,
+        string text)
+    {
+        if (!EntryFixedWidth.IsShadowEnabled(colorLayoutKey))
+            return;
+
+        var radius = EntryFixedWidth.GetShadowThickness(colorLayoutKey);
+        if (radius <= 0f)
+            return;
+
+        var shadowColor = ApplyOpacity(EntryFixedWidth.GetShadowColor(colorLayoutKey), opacity);
+        SeStringSoftShadow.DrawPlainText(drawList, font, fontSize, pos, shadowColor, radius, text);
+    }
+
+    /// <summary>
+    /// ImGui text outline ignores <see cref="SeStringDrawParams.EdgeStrength"/>; scale alpha from strength (memo: global edge 0.02).
+    /// </summary>
+    private static void DrawManualOutline(
+        ImDrawListPtr drawList,
+        ImFontPtr font,
+        float fontSize,
+        Vector2 pos,
+        string colorLayoutKey,
+        float opacity,
+        string text)
+    {
+        if (!EntryFixedWidth.IsEdgeEnabled(colorLayoutKey))
+            return;
+
+        var strength = EntryFixedWidth.GetEdgeStrength(colorLayoutKey);
+        if (strength <= 0f)
+            return;
+
+        var outlineColor = ApplyOpacity(EntryFixedWidth.GetOutlineColor(colorLayoutKey), opacity * strength);
+        foreach (var offset in DtrStyle.OutlineOffsets)
+            drawList.AddText(font, fontSize, pos + offset, outlineColor, text);
     }
 
     private static Vector2 GetAlignedPos(Vector2 contentSize, string layoutKey)
@@ -242,7 +353,7 @@ public static partial class DtrImGui
         string hoverTooltip = null,
         byte[] hoverTooltipSeStringData = null)
     {
-        if (C.OverlayEditMode)
+        if (C.OverlayGroups != null && C.OverlayGroups.Any(g => g.OverlayEditMode))
         {
             ImGui.Dummy(size);
             return;
@@ -286,8 +397,9 @@ public static partial class DtrImGui
 
     private static void PushTooltipStyle()
     {
-        ImGui.PushStyleColor(ImGuiCol.PopupBg, C.TooltipBackgroundColor);
-        ImGui.PushStyleColor(ImGuiCol.Text, C.TooltipTextColor);
+        var group = TooltipGroup;
+        ImGui.PushStyleColor(ImGuiCol.PopupBg, OverlayTooltipResolver.GetEffectiveBackgroundColor(group));
+        ImGui.PushStyleColor(ImGuiCol.Text, OverlayTooltipResolver.GetEffectiveTextColor(group));
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, DtrStyle.TooltipWindowRounding);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, DtrStyle.TooltipWindowPadding);
     }
@@ -300,7 +412,7 @@ public static partial class DtrImGui
 
     private static void BeginEntryTooltip(Vector2 itemMin, Vector2 itemMax)
     {
-        switch (C.TooltipPosition)
+        switch (OverlayTooltipResolver.GetEffectivePosition(TooltipGroup))
         {
             case TooltipPosition.Lower:
             {

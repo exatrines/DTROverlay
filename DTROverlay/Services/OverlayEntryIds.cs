@@ -12,6 +12,10 @@ internal static class OverlayEntryIds
 
     public const string AppearanceText = "@appearance:text";
 
+    public const string DefaultText = AppearanceText;
+
+    public const string DefaultSeparator = "@style:default-separator";
+
     public const string PluginSeparatorColor = "@separator:plugin";
 
     public const string NativeSeparatorColor = "@separator:native";
@@ -20,6 +24,12 @@ internal static class OverlayEntryIds
 
     public static bool IsAppearanceText(string layoutKey) =>
         layoutKey == AppearanceText;
+
+    public static bool IsDefaultText(string layoutKey) =>
+        layoutKey == DefaultText;
+
+    public static bool IsDefaultSeparator(string layoutKey) =>
+        layoutKey == DefaultSeparator;
 
     public static bool IsNativeGroupColor(string layoutKey) =>
         layoutKey == ServerInfoTextGroup;
@@ -58,10 +68,7 @@ internal static class OverlayEntryIds
         IsServerInfoPart(id);
 
     public static bool IsServerInfoPartVisible(string partId) =>
-        !C.HiddenServerInfoParts.Contains(partId);
-
-    public static bool IsServerInfoShownInOverlay() =>
-        C.ShowServerInfo;
+        OverlayGroupSettings.IsServerInfoPartVisible(partId);
 
     public static void MigrateMiddleClickUi()
     {
@@ -151,7 +158,61 @@ internal static class OverlayEntryIds
 
             if (C.FixedWidthOutlineColors.Remove(partId, out var outlineColor))
                 C.FixedWidthOutlineColors.TryAdd(group, outlineColor);
+
+            if (C.FixedWidthShadowColors.Remove(partId, out var shadowColor))
+                C.FixedWidthShadowColors.TryAdd(group, shadowColor);
+
+            if (C.FixedWidthEdgeStrengths.Remove(partId, out var edgeStrength))
+                C.FixedWidthEdgeStrengths.TryAdd(group, edgeStrength);
+
+            if (C.FixedWidthShadowThicknesses.Remove(partId, out var shadowThickness))
+                C.FixedWidthShadowThicknesses.TryAdd(group, shadowThickness);
         }
+    }
+
+    public static void EnsureColorStyleCollections()
+    {
+        C.FixedTextColorEnabledIds ??= [];
+        C.FixedEdgeStyleEnabledIds ??= [];
+        C.FixedShadowStyleEnabledIds ??= [];
+    }
+
+    public static void MigrateTextColorEnabled()
+    {
+        if (C.TextColorEnabledMigrated)
+            return;
+
+        EnsureColorStyleCollections();
+
+        foreach (var layoutKey in C.FixedColorEnabledIds)
+            C.FixedTextColorEnabledIds.Add(layoutKey);
+
+        foreach (var layoutKey in C.FixedWidthTextColors.Keys)
+            C.FixedTextColorEnabledIds.Add(layoutKey);
+
+        C.TextColorEnabledMigrated = true;
+    }
+
+    public static void MigrateEdgeShadowStyleEnabled()
+    {
+        if (C.EdgeShadowStyleEnabledMigrated)
+            return;
+
+        EnsureColorStyleCollections();
+
+        foreach (var layoutKey in C.FixedWidthOutlineColors.Keys)
+            C.FixedEdgeStyleEnabledIds.Add(layoutKey);
+
+        foreach (var layoutKey in C.FixedWidthEdgeStrengths.Keys)
+            C.FixedEdgeStyleEnabledIds.Add(layoutKey);
+
+        foreach (var layoutKey in C.FixedWidthShadowColors.Keys)
+            C.FixedShadowStyleEnabledIds.Add(layoutKey);
+
+        foreach (var layoutKey in C.FixedWidthShadowThicknesses.Keys)
+            C.FixedShadowStyleEnabledIds.Add(layoutKey);
+
+        C.EdgeShadowStyleEnabledMigrated = true;
     }
 
     /// <summary>Splits legacy single-set custom flags into separate width and color sets.</summary>
@@ -160,7 +221,16 @@ internal static class OverlayEntryIds
         if (C.AppearanceColorFlagsMigrated)
             return;
 
-        if (C.TextColor != DtrStyle.DefaultTextColor || C.OutlineColor != DtrStyle.DefaultOutlineColor)
+        if (C.TextColor != DtrStyle.DefaultTextColor)
+            C.FixedTextColorEnabledIds.Add(AppearanceText);
+
+        if (C.TextColor != DtrStyle.DefaultTextColor
+            || C.OutlineColor != DtrStyle.DefaultOutlineColor
+            || C.ShadowColor != DtrStyle.DefaultShadowColor
+            || C.EdgeEnabled != DtrStyle.DefaultEdgeEnabled
+            || C.ShadowEnabled != DtrStyle.DefaultShadowEnabled
+            || C.EdgeStrength != DtrStyle.DefaultEdgeStrength
+            || C.ShadowThickness != DtrStyle.DefaultShadowThickness)
             C.FixedColorEnabledIds.Add(AppearanceText);
 
         foreach (var layoutKey in new[]
@@ -171,7 +241,16 @@ internal static class OverlayEntryIds
                      ServerInfoTextGroup,
                  })
         {
-            if (C.FixedWidthTextColors.ContainsKey(layoutKey) || C.FixedWidthOutlineColors.ContainsKey(layoutKey))
+            if (C.FixedWidthTextColors.ContainsKey(layoutKey))
+                C.FixedTextColorEnabledIds.Add(layoutKey);
+
+            if (C.FixedWidthTextColors.ContainsKey(layoutKey)
+                || C.FixedWidthOutlineColors.ContainsKey(layoutKey)
+                || C.FixedWidthShadowColors.ContainsKey(layoutKey)
+                || C.FixedWidthEdgeEnabled.ContainsKey(layoutKey)
+                || C.FixedWidthShadowEnabled.ContainsKey(layoutKey)
+                || C.FixedWidthEdgeStrengths.ContainsKey(layoutKey)
+                || C.FixedWidthShadowThicknesses.ContainsKey(layoutKey))
                 C.FixedColorEnabledIds.Add(layoutKey);
         }
 
@@ -186,7 +265,12 @@ internal static class OverlayEntryIds
         foreach (var layoutKey in C.FixedWidthEnabledIds.ToList())
         {
             var hasCustomColors = C.FixedWidthTextColors.ContainsKey(layoutKey)
-                || C.FixedWidthOutlineColors.ContainsKey(layoutKey);
+                || C.FixedWidthOutlineColors.ContainsKey(layoutKey)
+                || C.FixedWidthShadowColors.ContainsKey(layoutKey)
+                || C.FixedWidthEdgeEnabled.ContainsKey(layoutKey)
+                || C.FixedWidthShadowEnabled.ContainsKey(layoutKey)
+                || C.FixedWidthEdgeStrengths.ContainsKey(layoutKey)
+                || C.FixedWidthShadowThicknesses.ContainsKey(layoutKey);
             var hasCustomWidth = C.FixedWidthPixels.ContainsKey(layoutKey);
 
             if (hasCustomColors)
@@ -202,6 +286,112 @@ internal static class OverlayEntryIds
         ServerInfo => "Server Info",
         _ => id,
     };
+
+    public static void MigrateStyleHierarchy()
+    {
+        if (C.StyleHierarchyMigrated)
+            return;
+
+        EnsureColorStyleCollections();
+
+        MigrateSeparatorStored(OverlayEntryIds.PluginSeparatorColor, OverlayEntryIds.DefaultSeparator);
+        MigrateSeparatorStored(OverlayEntryIds.NativeSeparatorColor, OverlayEntryIds.DefaultSeparator);
+
+        if (C.FixedTextColorEnabledIds.Remove(OverlayEntryIds.ServerInfoTextGroup))
+            C.FixedTextColorEnabledIds.Add(DefaultText);
+
+        CopyStyleStored(ServerInfoTextGroup, DefaultText);
+
+        C.StyleHierarchyMigrated = true;
+        EzConfig.Save();
+    }
+
+    /// <summary>Copies legacy Native-group override colors into Default+Native merged override keys.</summary>
+    public static void MigrateMergedDefaultOverrideStyles()
+    {
+        if (C.MergedDefaultOverrideStylesMigrated)
+            return;
+
+        var def = DtrOverlayGroups.GetDefaultGroup();
+        var native = DtrOverlayGroups.GetNativeGroup();
+
+        CopyOverrideStyleIfMissing(GroupStyleKeys.OverrideNativeText(def.Id), GroupStyleKeys.OverrideText(native.Id));
+        CopyOverrideStyleIfMissing(
+            GroupStyleKeys.OverrideNativeSeparator(def.Id),
+            GroupStyleKeys.OverrideSeparator(native.Id));
+
+        C.MergedDefaultOverrideStylesMigrated = true;
+        EzConfig.Save();
+    }
+
+    private static void CopyOverrideStyleIfMissing(string toKey, string fromKey)
+    {
+        if (toKey == fromKey || HasStoredStyle(toKey))
+            return;
+
+        if (!HasStoredStyle(fromKey))
+            return;
+
+        CopyStyleStored(fromKey, toKey);
+
+        if (C.FixedTextColorEnabledIds.Remove(fromKey))
+            C.FixedTextColorEnabledIds.Add(toKey);
+
+        if (C.FixedColorEnabledIds.Remove(fromKey))
+            C.FixedColorEnabledIds.Add(toKey);
+
+        if (C.FixedEdgeStyleEnabledIds.Remove(fromKey))
+            C.FixedEdgeStyleEnabledIds.Add(toKey);
+
+        if (C.FixedShadowStyleEnabledIds.Remove(fromKey))
+            C.FixedShadowStyleEnabledIds.Add(toKey);
+    }
+
+    private static bool HasStoredStyle(string layoutKey) =>
+        C.FixedTextColorEnabledIds.Contains(layoutKey)
+        || C.FixedColorEnabledIds.Contains(layoutKey)
+        || C.FixedWidthTextColors.ContainsKey(layoutKey)
+        || C.FixedWidthOutlineColors.ContainsKey(layoutKey)
+        || C.FixedWidthShadowColors.ContainsKey(layoutKey)
+        || C.FixedWidthEdgeStrengths.ContainsKey(layoutKey)
+        || C.FixedWidthShadowThicknesses.ContainsKey(layoutKey)
+        || C.FixedWidthEdgeEnabled.ContainsKey(layoutKey)
+        || C.FixedWidthShadowEnabled.ContainsKey(layoutKey);
+
+    private static void MigrateSeparatorStored(string fromKey, string toKey)
+    {
+        if (C.FixedTextColorEnabledIds.Remove(fromKey))
+            C.FixedTextColorEnabledIds.Add(toKey);
+
+        CopyStyleStored(fromKey, toKey);
+    }
+
+    private static void CopyStyleStored(string fromKey, string toKey)
+    {
+        if (fromKey == DefaultText || toKey == DefaultText)
+            return;
+
+        if (C.FixedWidthTextColors.TryGetValue(fromKey, out var text))
+            C.FixedWidthTextColors[toKey] = text;
+
+        if (C.FixedWidthOutlineColors.TryGetValue(fromKey, out var outline))
+            C.FixedWidthOutlineColors[toKey] = outline;
+
+        if (C.FixedWidthShadowColors.TryGetValue(fromKey, out var shadow))
+            C.FixedWidthShadowColors[toKey] = shadow;
+
+        if (C.FixedWidthEdgeStrengths.TryGetValue(fromKey, out var edgeStrength))
+            C.FixedWidthEdgeStrengths[toKey] = edgeStrength;
+
+        if (C.FixedWidthShadowThicknesses.TryGetValue(fromKey, out var shadowThickness))
+            C.FixedWidthShadowThicknesses[toKey] = shadowThickness;
+
+        if (C.FixedWidthEdgeEnabled.TryGetValue(fromKey, out var edgeEnabled))
+            C.FixedWidthEdgeEnabled[toKey] = edgeEnabled;
+
+        if (C.FixedWidthShadowEnabled.TryGetValue(fromKey, out var shadowEnabled))
+            C.FixedWidthShadowEnabled[toKey] = shadowEnabled;
+    }
 
     public static string GetPartDisplayName(string partId) => partId switch
     {

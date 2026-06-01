@@ -121,21 +121,46 @@ public static partial class DtrImGui
 
     private static List<VisibleDtrEntry> InsertPluginSeparators(IReadOnlyList<VisibleDtrEntry> entries)
     {
-        if (!DtrSeparatorStyle.IsPluginVisible)
-            return entries is List<VisibleDtrEntry> list ? list : [.. entries];
-
         var result = new List<VisibleDtrEntry>(entries.Count);
         VisibleDtrEntry? previousEntry = null;
 
         foreach (var entry in entries)
         {
             if (ShouldInsertSeparatorBefore(entry, previousEntry))
-                result.Add(CreatePluginSeparator());
+                result.Add(DtrSeparators.CreatePlugin());
 
             result.Add(entry);
             previousEntry = entry;
         }
 
+        return result;
+    }
+
+    private static IReadOnlyList<VisibleDtrEntry> InsertDivisionSeparatorIfNeeded(
+        IReadOnlyList<VisibleDtrEntry> pluginEntries)
+    {
+        if (!DtrSeparators.ShouldInsertDivision(hasNativeOverlayEntries: false, pluginEntries.Count > 0))
+            return pluginEntries;
+
+        var division = DtrSeparators.CreateDivision();
+
+        if (FollowVanillaDtrMode.IsActive)
+        {
+            if (FollowVanillaDtrMode.ShouldPrependDivisionSeparatorToPluginList())
+            {
+                var prepended = new List<VisibleDtrEntry>(pluginEntries.Count + 1) { division };
+                prepended.AddRange(pluginEntries);
+                return prepended;
+            }
+
+            var appended = new List<VisibleDtrEntry>(pluginEntries.Count + 1);
+            appended.AddRange(pluginEntries);
+            appended.Add(division);
+            return appended;
+        }
+
+        var result = new List<VisibleDtrEntry>(pluginEntries.Count + 1) { division };
+        result.AddRange(pluginEntries);
         return result;
     }
 
@@ -152,10 +177,10 @@ public static partial class DtrImGui
         if (AreGroupedPluginEntries(previousEntry.Value, entry))
             return false;
 
-        if (!IsPluginContent(previousEntry.Value))
+        if (!IsPluginOverlayEntry(previousEntry.Value))
             return false;
 
-        return true;
+        return entry.AffixRole == PluginAffixRole.Prefix || IsPluginContent(entry);
     }
 
     private static bool AreGroupedPluginEntries(VisibleDtrEntry previous, VisibleDtrEntry next) =>
@@ -168,23 +193,7 @@ public static partial class DtrImGui
         entry.AffixRole != PluginAffixRole.None || IsPluginContent(entry);
 
     private static bool IsPluginContent(VisibleDtrEntry entry) =>
-        entry.Kind == VisibleDtrEntryKind.SeString && !string.IsNullOrEmpty(entry.DtrEntryTitle);
-
-    private static bool IsHorizontalDivisionLayout =>
-        !FollowVanillaDtrMode.IsActive && C.OverlayLayoutMode == OverlayLayoutMode.Horizontal;
-
-    private static bool UsesDivisionSeparator =>
-        IsHorizontalDivisionLayout && C.NativePluginDivision == NativePluginDivisionMode.Separator;
-
-    private static bool UsesNewLineDivision =>
-        IsHorizontalDivisionLayout && C.NativePluginDivision == NativePluginDivisionMode.NewLine;
-
-    private static bool ShouldShowDivisionSeparator(bool hasNativeEntries, bool hasPluginEntries) =>
-        UsesDivisionSeparator && hasNativeEntries && hasPluginEntries;
-
-    private static VisibleDtrEntry CreatePluginSeparator() =>
-        VisibleDtrEntry.FromText("|", colorLayoutKey: OverlayEntryIds.PluginSeparatorColor);
-
-    private static VisibleDtrEntry CreateDivisionSeparator() =>
-        VisibleDtrEntry.FromText("|", colorLayoutKey: OverlayEntryIds.DivisionSeparatorColor);
+        entry.AffixRole == PluginAffixRole.None
+        && entry.Kind == VisibleDtrEntryKind.SeString
+        && !string.IsNullOrEmpty(entry.DtrEntryTitle);
 }

@@ -38,8 +38,29 @@ internal static class DtrStyle
     public const float DefaultOverlayFontSizeScale = 1.1f;
     public const float DefaultFollowVanillaFontSizeScale = 1f;
 
-    public static readonly Vector4 DefaultTextColor = new(1f, 1f, 1f, 1f);
-    public static readonly Vector4 DefaultOutlineColor = new(0xC8 / 255f, 0x84 / 255f, 0x01 / 255f, 1f);
+    /// <summary>Origin palette (final fallback when Default style columns are off).</summary>
+    public static readonly Vector4 OriginTextColor = new(1f, 1f, 1f, 1f);
+    public static readonly Vector4 OriginOutlineColor = new(1f, 1f, 0f, 1f);
+    public static readonly Vector4 OriginShadowColor = new(0xB0 / 255f, 0x6F / 255f, 0f, 0x78 / 255f);
+
+    public const bool OriginEdgeEnabled = true;
+    public const bool OriginShadowEnabled = true;
+    public const float OriginEdgeStrength = 0.02f;
+    public const float OriginShadowThickness = 2.5f;
+
+    /// <summary>Legacy name for <see cref="OriginTextColor"/>.</summary>
+    public static readonly Vector4 DefaultTextColor = OriginTextColor;
+    public static readonly Vector4 DefaultOutlineColor = OriginOutlineColor;
+    public static readonly Vector4 DefaultShadowColor = OriginShadowColor;
+    public const bool DefaultEdgeEnabled = OriginEdgeEnabled;
+    public const bool DefaultShadowEnabled = OriginShadowEnabled;
+    public const float DefaultEdgeStrength = OriginEdgeStrength;
+    public const float DefaultShadowThickness = OriginShadowThickness;
+    public const float MaxEdgeStrength = 1f;
+    public const float MaxShadowThickness = 4f;
+    public const float MaxSoftShadowRadius = 4f;
+    /// <summary>Per-sample alpha scale so stacked soft-shadow passes match a single crisp shadow.</summary>
+    public const float SoftShadowAccumulation = 0.45f;
 
     public static readonly Vector2[] OutlineOffsets =
     [

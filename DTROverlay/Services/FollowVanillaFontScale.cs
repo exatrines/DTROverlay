@@ -15,10 +15,11 @@ internal static class FollowVanillaFontScale
     private static float _cachedContentToLineRatio = DefaultContentToLineRatio;
     private static float _cachedNativeRowHeight;
 
-    public static float ActiveScale =>
-        FollowVanillaDtrMode.IsActive
-            ? Math.Clamp(_cachedVanillaMatchScale * C.FollowVanillaFontSizeScale, MinScale, MaxScale)
-            : C.OverlayFontSizeScale;
+    /// <summary>Effective overlay font scale for the current <see cref="OverlayStyleContext"/> group.</summary>
+    public static float ActiveScale => OverlayStyleResolver.GetEffectiveOverlayFontScale();
+
+    public static float GetVanillaPluginScale() =>
+        Math.Clamp(_cachedVanillaMatchScale * C.FollowVanillaFontSizeScale, MinScale, MaxScale);
 
     public static float NativeRowHeight => _cachedNativeRowHeight;
 

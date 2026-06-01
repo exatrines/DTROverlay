@@ -5,97 +5,174 @@ namespace DTROverlay.UI;
 
 internal static class OverlayColorPicker
 {
-    public static void DrawRow(string layoutKey, string idPrefix, bool rowEnabled)
+    public static void DrawTextColumn(string layoutKey, string idPrefix, bool rowEnabled)
     {
         ImGui.BeginDisabled(!rowEnabled);
 
-        var colorEnabled = EntryFixedWidth.IsColorEnabled(layoutKey);
-        if (ImGui.Checkbox($"##color_{idPrefix}", ref colorEnabled))
-            EntryFixedWidth.SetColorEnabled(layoutKey, colorEnabled);
+        var textColorEnabled = EntryFixedWidth.IsTextColorEnabled(layoutKey);
+        if (ImGui.Checkbox($"##textColor_{idPrefix}", ref textColorEnabled))
+            EntryFixedWidth.SetTextColorEnabled(layoutKey, textColorEnabled);
 
         ImGui.SameLine();
-        var textColor = GetTextColor(layoutKey);
-        var outlineColor = GetOutlineColor(layoutKey);
+        ImGui.BeginDisabled(!textColorEnabled);
 
-        ImGui.BeginDisabled(!colorEnabled);
-        if (ImGui.ColorEdit4($"Text##{idPrefix}", ref textColor, DtrStyle.ColorEditFlags) && colorEnabled)
+        var textColor = EntryFixedWidth.GetStoredTextColor(layoutKey);
+        if (ImGui.ColorEdit4($"Text##{idPrefix}", ref textColor, DtrStyle.ColorEditFlags) && textColorEnabled)
             SaveTextColor(layoutKey, textColor);
 
-        ImGui.SameLine();
-        if (ImGui.ColorEdit4($"Outline##{idPrefix}", ref outlineColor, DtrStyle.ColorEditFlags) && colorEnabled)
-            SaveOutlineColor(layoutKey, outlineColor);
-
-        ImGui.SameLine();
-        if (DtrImGui.SmallIconButton(FontAwesomeIcon.Undo, $"##colorReset_{idPrefix}"))
-        {
-            EntryFixedWidth.ResetColorsToDefault(layoutKey);
-            textColor = GetTextColor(layoutKey);
-            outlineColor = GetOutlineColor(layoutKey);
-        }
-
         ImGui.EndDisabled();
+        DrawColumnResetButton(layoutKey, idPrefix, "Text", () => EntryFixedWidth.ResetTextStyleToDefault(layoutKey));
         ImGui.EndDisabled();
     }
 
-    public static void DrawPluginEntryColors(string layoutKey, string idPrefix)
+    public static void DrawEdgeColumn(string layoutKey, string idPrefix, bool rowEnabled)
     {
-        var colorEnabled = EntryFixedWidth.IsColorEnabled(layoutKey);
-        if (ImGui.Checkbox($"##color_{idPrefix}", ref colorEnabled))
-            EntryFixedWidth.SetColorEnabled(layoutKey, colorEnabled);
+        ImGui.BeginDisabled(!rowEnabled);
 
-        if (!C.FixedWidthTextColors.TryGetValue(layoutKey, out var textColor))
-            textColor = EntryFixedWidth.GetDefaultTextColor();
-
-        if (!C.FixedWidthOutlineColors.TryGetValue(layoutKey, out var outlineColor))
-            outlineColor = EntryFixedWidth.GetDefaultOutlineColor();
+        var edgeStyleEnabled = EntryFixedWidth.IsEdgeStyleEnabled(layoutKey);
+        if (ImGui.Checkbox($"##edgeStyle_{idPrefix}", ref edgeStyleEnabled))
+            EntryFixedWidth.SetEdgeStyleEnabled(layoutKey, edgeStyleEnabled);
 
         ImGui.SameLine();
-        ImGui.BeginDisabled(!colorEnabled);
-        if (ImGui.ColorEdit4($"Text##{idPrefix}", ref textColor, DtrStyle.ColorEditFlags) && colorEnabled)
-            C.FixedWidthTextColors[layoutKey] = textColor;
+        ImGui.BeginDisabled(!edgeStyleEnabled);
+
+        var edgeColor = EntryFixedWidth.GetStoredOutlineColor(layoutKey);
+        if (ImGui.ColorEdit4($"Edge##{idPrefix}", ref edgeColor, DtrStyle.ColorEditFlags) && edgeStyleEnabled)
+            SaveEdgeColor(layoutKey, edgeColor);
+
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGui.SetTooltip("SeString edge (outline) color.");
 
         ImGui.SameLine();
-        if (ImGui.ColorEdit4($"Outline##{idPrefix}", ref outlineColor, DtrStyle.ColorEditFlags) && colorEnabled)
-            C.FixedWidthOutlineColors[layoutKey] = outlineColor;
+        var edgeStrength = EntryFixedWidth.GetStoredEdgeStrength(layoutKey);
+        DrawStrengthControl(layoutKey, idPrefix, edgeStyleEnabled, ref edgeStrength, isEdge: true);
+
+        ImGui.EndDisabled();
+        DrawColumnResetButton(layoutKey, idPrefix, "Edge", () => EntryFixedWidth.ResetEdgeStyleToDefault(layoutKey));
+        ImGui.EndDisabled();
+    }
+
+    public static void DrawShadowColumn(string layoutKey, string idPrefix, bool rowEnabled)
+    {
+        ImGui.BeginDisabled(!rowEnabled);
+
+        var shadowStyleEnabled = EntryFixedWidth.IsShadowStyleEnabled(layoutKey);
+        if (ImGui.Checkbox($"##shadowStyle_{idPrefix}", ref shadowStyleEnabled))
+            EntryFixedWidth.SetShadowStyleEnabled(layoutKey, shadowStyleEnabled);
 
         ImGui.SameLine();
-        if (DtrImGui.SmallIconButton(FontAwesomeIcon.Undo, $"##colorReset_{idPrefix}"))
+        ImGui.BeginDisabled(!shadowStyleEnabled);
+
+        var shadowColor = EntryFixedWidth.GetStoredShadowColor(layoutKey);
+        if (ImGui.ColorEdit4($"Shadow##{idPrefix}", ref shadowColor, DtrStyle.ColorEditFlags) && shadowStyleEnabled)
+            SaveShadowColor(layoutKey, shadowColor);
+
+        ImGui.SameLine();
+        var shadowThickness = EntryFixedWidth.GetStoredShadowThickness(layoutKey);
+        DrawStrengthControl(layoutKey, idPrefix, shadowStyleEnabled, ref shadowThickness, isEdge: false);
+
+        ImGui.EndDisabled();
+        DrawColumnResetButton(layoutKey, idPrefix, "Shadow", () => EntryFixedWidth.ResetShadowStyleToDefault(layoutKey));
+        ImGui.EndDisabled();
+    }
+
+    private static void DrawColumnResetButton(string layoutKey, string idPrefix, string column, Action reset)
+    {
+        ImGui.SameLine();
+        if (DtrImGui.SmallIconButton(FontAwesomeIcon.Undo, $"##reset{column}_{idPrefix}"))
         {
-            EntryFixedWidth.ResetColorsToDefault(layoutKey);
-            textColor = EntryFixedWidth.GetDefaultTextColor();
-            outlineColor = EntryFixedWidth.GetDefaultOutlineColor();
+            reset();
+            EzConfig.Save();
+        }
+
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(GetResetTooltip(layoutKey, column));
+    }
+
+    private static void DrawStrengthControl(
+        string layoutKey,
+        string idPrefix,
+        bool effectEnabled,
+        ref float strength,
+        bool isEdge)
+    {
+        ImGui.BeginDisabled(!effectEnabled);
+        ImGui.SetNextItemWidth(40f);
+
+        if (isEdge)
+        {
+            if (ImGui.DragFloat($"E+##{idPrefix}", ref strength, 0.01f, 0f, DtrStyle.MaxEdgeStrength, "%.2f")
+                && effectEnabled)
+                SaveEdgeStrength(layoutKey, strength);
+
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGui.SetTooltip("Edge strength (0–1).");
+        }
+        else
+        {
+            if (ImGui.DragFloat($"S+##{idPrefix}", ref strength, 0.05f, 0f, DtrStyle.MaxShadowThickness, "%.1f")
+                && effectEnabled)
+                SaveShadowThickness(layoutKey, strength);
+
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGui.SetTooltip("Soft shadow radius in pixels (0 = off, fractional values allowed).");
         }
 
         ImGui.EndDisabled();
     }
 
-    private static Vector4 GetTextColor(string layoutKey) =>
-        OverlayEntryIds.IsAppearanceText(layoutKey)
-            ? C.TextColor
-            : C.FixedWidthTextColors.TryGetValue(layoutKey, out var color)
-                ? color
-                : EntryFixedWidth.GetDefaultTextColor();
+    private static string GetResetTooltip(string layoutKey, string column)
+    {
+        var col = column.ToLowerInvariant();
+        if (OverlayEntryIds.IsDefaultText(layoutKey) || OverlayEntryIds.IsDefaultSeparator(layoutKey))
+            return $"Copy Origin {col} into this row's stored parameters.";
 
-    private static Vector4 GetOutlineColor(string layoutKey) =>
-        OverlayEntryIds.IsAppearanceText(layoutKey)
-            ? C.OutlineColor
-            : C.FixedWidthOutlineColors.TryGetValue(layoutKey, out var color)
-                ? color
-                : EntryFixedWidth.GetDefaultOutlineColor();
+        if (GroupStyleKeys.IsOverrideKey(layoutKey))
+            return $"Copy Default Style {col} stored values into this override row.";
+
+        if (GroupStyleKeys.IsPluginEntryKey(layoutKey))
+            return $"Copy group Override Text {col} stored values into this plugin row.";
+
+        return $"Copy group Override Text {col} stored values into this row.";
+    }
 
     private static void SaveTextColor(string layoutKey, Vector4 color)
     {
-        if (OverlayEntryIds.IsAppearanceText(layoutKey))
+        if (OverlayEntryIds.IsDefaultText(layoutKey))
             C.TextColor = color;
         else
             C.FixedWidthTextColors[layoutKey] = color;
     }
 
-    private static void SaveOutlineColor(string layoutKey, Vector4 color)
+    private static void SaveEdgeColor(string layoutKey, Vector4 color)
     {
-        if (OverlayEntryIds.IsAppearanceText(layoutKey))
+        if (OverlayEntryIds.IsDefaultText(layoutKey))
             C.OutlineColor = color;
         else
             C.FixedWidthOutlineColors[layoutKey] = color;
+    }
+
+    private static void SaveShadowColor(string layoutKey, Vector4 color)
+    {
+        if (OverlayEntryIds.IsDefaultText(layoutKey))
+            C.ShadowColor = color;
+        else
+            C.FixedWidthShadowColors[layoutKey] = color;
+    }
+
+    private static void SaveEdgeStrength(string layoutKey, float strength)
+    {
+        if (OverlayEntryIds.IsDefaultText(layoutKey))
+            C.EdgeStrength = strength;
+        else
+            C.FixedWidthEdgeStrengths[layoutKey] = strength;
+    }
+
+    private static void SaveShadowThickness(string layoutKey, float thickness)
+    {
+        if (OverlayEntryIds.IsDefaultText(layoutKey))
+            C.ShadowThickness = thickness;
+        else
+            C.FixedWidthShadowThicknesses[layoutKey] = thickness;
     }
 }
