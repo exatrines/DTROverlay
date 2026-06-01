@@ -14,8 +14,8 @@ internal static class DtrOverlayGroups
         C.OverlayGroups ??= [];
         MigrateLegacySettings();
         OverlayEntryIds.MigrateStyleHierarchy();
-        OverlayEntryIds.MigrateMergedDefaultOverrideStyles();
         EnsureSystemGroups();
+        OverlayEntryIds.MigrateMergedDefaultOverrideStyles();
         MigrateGroupLayout();
         MigrateGroupScopedSettings();
 
