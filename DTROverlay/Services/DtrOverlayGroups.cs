@@ -125,18 +125,45 @@ internal static class DtrOverlayGroups
 
     public static void ApplyFollowVanillaConstraints()
     {
-        if (!C.FollowVanillaDtr || C.OverlayGroups.Count == 0)
+        if (!ApplyFollowVanillaConstraintsCore())
             return;
-
-        var def = GetDefaultGroup();
-        def.Name = DefaultGroupName;
-        GetNativeGroup().Name = NativeGroupName;
-
-        if (IsNativeGroup(GetSelected()))
-            Select(def.Id);
 
         EzConfig.Save();
         OverlayWindowHost.RequestRefresh();
+    }
+
+    // Follow Vanilla の制約（グループ名固定・Native 選択の解除）を適用する。
+    // 実際に値が変化した場合のみ true を返す。保存・再描画要求は呼び出し側に委ねるため、
+    // 毎フレーム呼ばれても変化が無ければ何もしない（FPS 低下対策）。
+    internal static bool ApplyFollowVanillaConstraintsCore()
+    {
+        if (!C.FollowVanillaDtr || C.OverlayGroups.Count == 0)
+            return false;
+
+        var changed = false;
+
+        var def = GetDefaultGroup();
+        if (def.Name != DefaultGroupName)
+        {
+            def.Name = DefaultGroupName;
+            changed = true;
+        }
+
+        var native = GetNativeGroup();
+        if (native.Name != NativeGroupName)
+        {
+            native.Name = NativeGroupName;
+            changed = true;
+        }
+
+        if (IsNativeGroup(GetSelected()))
+        {
+            // Select() は内部で EzConfig.Save を呼ぶため、ここでは選択 ID のみ更新し保存はまとめて行う。
+            C.SelectedOverlayGroupId = def.Id;
+            changed = true;
+        }
+
+        return changed;
     }
 
     public static bool TryAddGroup(string name)
