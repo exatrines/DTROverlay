@@ -12,112 +12,75 @@ public static partial class DtrImGui
         var width = 0f;
         var needsSpacing = false;
 
-        for (var i = groupStart; i <= groupEnd; i++)
+        foreach (var index in EnumeratePluginRowDrawOrder(entries, groupStart, groupEnd))
         {
             if (needsSpacing)
-                width += entries[i].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
+                width += entries[index].SameLineSpacingBefore ?? DtrStyle.EntrySpacing;
 
-            width += MeasureEntry(entries[i]).X;
+            width += MeasureEntry(entries[index]).X;
             needsSpacing = true;
         }
 
         return width;
     }
 
-    private static bool TryGetPluginEntryGroupForward(
+    private static void DrawPluginEntryRow(
         IReadOnlyList<VisibleDtrEntry> entries,
-        int index,
-        out int groupStart,
-        out int contentIndex,
-        out int groupEnd)
+        int rowStart,
+        int rowEnd,
+        bool sameLineBefore)
     {
-        groupStart = index;
-        contentIndex = -1;
-        groupEnd = index;
+        var needsSpacing = sameLineBefore;
 
-        if (index >= entries.Count)
-            return false;
-
-        if (entries[index].AffixRole == PluginAffixRole.Prefix)
+        foreach (var index in EnumeratePluginRowDrawOrder(entries, rowStart, rowEnd))
         {
-            if (index + 1 >= entries.Count || !IsPluginContent(entries[index + 1]))
-                return false;
+            if (needsSpacing)
+                ImGui.SameLine(0f, entries[index].SameLineSpacingBefore ?? DtrStyle.EntrySpacing);
 
-            contentIndex = index + 1;
-            groupEnd = contentIndex;
-            if (contentIndex + 1 < entries.Count
-                && entries[contentIndex + 1].AffixRole == PluginAffixRole.Suffix
-                && SharesPluginEntryTitle(entries[contentIndex], entries[contentIndex + 1]))
-                groupEnd = contentIndex + 1;
-
-            return true;
+            DrawEntry(entries[index]);
+            needsSpacing = true;
         }
-
-        if (!IsPluginContent(entries[index]))
-            return false;
-
-        contentIndex = index;
-        groupEnd = index;
-        if (index + 1 < entries.Count
-            && entries[index + 1].AffixRole == PluginAffixRole.Suffix
-            && SharesPluginEntryTitle(entries[index], entries[index + 1]))
-            groupEnd = index + 1;
-
-        return true;
     }
 
-    private static bool TryGetPluginEntryGroupAt(
+    /// <summary>Always prefix → content → suffix, regardless of list index order.</summary>
+    private static IEnumerable<int> EnumeratePluginRowDrawOrder(
         IReadOnlyList<VisibleDtrEntry> entries,
-        int index,
-        out int groupStart,
-        out int contentIndex,
-        out int groupEnd)
+        int rowStart,
+        int rowEnd)
     {
-        if (TryGetPluginEntryGroupForward(entries, index, out groupStart, out contentIndex, out groupEnd))
-            return true;
+        int? prefix = null;
+        int? content = null;
+        int? suffix = null;
 
-        if (IsPluginContent(entries[index]))
+        for (var i = rowStart; i <= rowEnd; i++)
         {
-            contentIndex = index;
-            groupEnd = index;
-            groupStart = index;
-            if (index + 1 < entries.Count
-                && entries[index + 1].AffixRole == PluginAffixRole.Suffix
-                && SharesPluginEntryTitle(entries[index], entries[index + 1]))
-                groupEnd = index + 1;
+            if (!entries[i].HasVisibleContent)
+                continue;
 
-            if (index > 0
-                && entries[index - 1].AffixRole == PluginAffixRole.Prefix
-                && SharesPluginEntryTitle(entries[index - 1], entries[index]))
-                groupStart = index - 1;
-
-            return true;
+            switch (entries[i].AffixRole)
+            {
+                case PluginAffixRole.Prefix:
+                    prefix = i;
+                    break;
+                case PluginAffixRole.Suffix:
+                    suffix = i;
+                    break;
+                default:
+                    if (PluginEntryRowLayout.IsPluginContent(entries[i]))
+                        content = i;
+                    break;
+            }
         }
 
-        if (entries[index].AffixRole == PluginAffixRole.Suffix
-            && index > 0
-            && IsPluginContent(entries[index - 1]))
-        {
-            contentIndex = index - 1;
-            groupEnd = index;
-            groupStart = contentIndex;
-            if (contentIndex > 0
-                && entries[contentIndex - 1].AffixRole == PluginAffixRole.Prefix
-                && SharesPluginEntryTitle(entries[contentIndex - 1], entries[contentIndex]))
-                groupStart = contentIndex - 1;
+        if (prefix is { } prefixIndex)
+            yield return prefixIndex;
 
-            return true;
-        }
+        if (content is { } contentIndex)
+            yield return contentIndex;
 
-        groupStart = -1;
-        contentIndex = -1;
-        groupEnd = -1;
-        return false;
+        if (suffix is { } suffixIndex)
+            yield return suffixIndex;
     }
-
-    private static bool SharesPluginEntryTitle(VisibleDtrEntry left, VisibleDtrEntry right) =>
-        !string.IsNullOrEmpty(left.DtrEntryTitle)
-        && left.DtrEntryTitle == right.DtrEntryTitle;
 
     private static List<VisibleDtrEntry> InsertPluginSeparators(IReadOnlyList<VisibleDtrEntry> entries)
     {
@@ -168,7 +131,7 @@ public static partial class DtrImGui
         VisibleDtrEntry entry,
         VisibleDtrEntry? previousEntry)
     {
-        if (!IsPluginOverlayEntry(entry))
+        if (!PluginEntryRowLayout.IsPluginOverlayEntry(entry))
             return false;
 
         if (previousEntry == null)
@@ -177,23 +140,24 @@ public static partial class DtrImGui
         if (AreGroupedPluginEntries(previousEntry.Value, entry))
             return false;
 
-        if (!IsPluginOverlayEntry(previousEntry.Value))
+        if (!PluginEntryRowLayout.IsPluginOverlayEntry(previousEntry.Value))
             return false;
 
-        return entry.AffixRole == PluginAffixRole.Prefix || IsPluginContent(entry);
+        return entry.AffixRole == PluginAffixRole.Prefix && entry.HasVisibleContent
+            || PluginEntryRowLayout.IsPluginContent(entry);
     }
 
     private static bool AreGroupedPluginEntries(VisibleDtrEntry previous, VisibleDtrEntry next) =>
-        previous.AffixRole == PluginAffixRole.Prefix && IsPluginContent(next)
-            && SharesPluginEntryTitle(previous, next)
-        || IsPluginContent(previous) && next.AffixRole == PluginAffixRole.Suffix
-            && SharesPluginEntryTitle(previous, next);
+        !string.IsNullOrEmpty(previous.DtrEntryTitle)
+        && previous.DtrEntryTitle == next.DtrEntryTitle
+        && (
+            previous.AffixRole == PluginAffixRole.Prefix
+                && previous.HasVisibleContent
+                && PluginEntryRowLayout.IsPluginContent(next)
+            || PluginEntryRowLayout.IsPluginContent(previous)
+                && next.AffixRole == PluginAffixRole.Suffix
+                && next.HasVisibleContent);
 
     private static bool IsPluginOverlayEntry(VisibleDtrEntry entry) =>
-        entry.AffixRole != PluginAffixRole.None || IsPluginContent(entry);
-
-    private static bool IsPluginContent(VisibleDtrEntry entry) =>
-        entry.AffixRole == PluginAffixRole.None
-        && entry.Kind == VisibleDtrEntryKind.SeString
-        && !string.IsNullOrEmpty(entry.DtrEntryTitle);
+        PluginEntryRowLayout.IsPluginOverlayEntry(entry);
 }

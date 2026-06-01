@@ -171,7 +171,10 @@ public static partial class DtrImGui
         byte[] hoverTooltipSeStringData)
     {
         if (data.Length == 0)
+        {
+            AdvanceEntry(Vector2.Zero, onClick, dtrEntryTitle, hoverTooltipSeStringData: hoverTooltipSeStringData);
             return;
+        }
 
         var measureParams = CreateSeStringDrawParams(colorLayoutKey, 1f);
         measureParams.TargetDrawList = ImGui.GetWindowDrawList();
@@ -180,7 +183,10 @@ public static partial class DtrImGui
         var measured = ImGuiHelpers.SeStringWrapped(data, measureParams);
         var contentSize = measured.Size;
         if (contentSize == Vector2.Zero)
+        {
+            AdvanceEntry(Vector2.Zero, onClick, dtrEntryTitle, hoverTooltipSeStringData: hoverTooltipSeStringData);
             return;
+        }
 
         var slotWidth = EntryFixedWidth.ResolveWidth(layoutKey, contentSize.X);
         var slotSize = new Vector2(slotWidth, LineHeight);

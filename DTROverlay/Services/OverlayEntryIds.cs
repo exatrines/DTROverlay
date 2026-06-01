@@ -87,7 +87,11 @@ internal static class OverlayEntryIds
         foreach (var title in C.ShowPluginNameEntryTitles)
         {
             if (!C.PluginEntryAffixesByTitle.ContainsKey(title))
-                C.PluginEntryAffixesByTitle[title] = new PluginEntryAffixes { Prefix = $"[{title}] " };
+            {
+                var affixes = new PluginEntryAffixes { Prefix = $"[{title}] " };
+                affixes.Normalize();
+                C.PluginEntryAffixesByTitle[title] = affixes;
+            }
         }
 
         C.ShowPluginNameEntryTitles.Clear();

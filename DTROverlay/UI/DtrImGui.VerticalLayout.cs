@@ -21,7 +21,7 @@ public static partial class DtrImGui
         {
             float rowWidth;
             var groupLength = 1;
-            if (TryGetPluginEntryGroupForward(orderedPluginEntries, i, out var groupStart, out var contentIndex, out var groupEnd))
+            if (PluginEntryRowLayout.TryGetPluginRowSpan(orderedPluginEntries, i, out var groupStart, out var groupEnd))
             {
                 rowWidth = MeasurePluginEntryGroupWidth(orderedPluginEntries, groupStart, groupEnd);
                 groupLength = groupEnd - i + 1;
@@ -70,9 +70,9 @@ public static partial class DtrImGui
                 GetRowStartX(contentMin.X, maxWidth, rowWidths[rowIndex], alignment),
                 y));
 
-            if (TryGetPluginEntryGroupForward(orderedPluginEntries, i, out var drawGroupStart, out var drawContentIndex, out var drawGroupEnd))
+            if (PluginEntryRowLayout.TryGetPluginRowSpan(orderedPluginEntries, i, out var drawGroupStart, out var drawGroupEnd))
             {
-                DrawHorizontalEntryGroup(orderedPluginEntries, drawGroupStart, drawGroupEnd, sameLineBefore: false);
+                DrawPluginEntryRow(orderedPluginEntries, drawGroupStart, drawGroupEnd, sameLineBefore: false);
                 i = drawGroupEnd + 1;
             }
             else

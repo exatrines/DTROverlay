@@ -28,6 +28,7 @@ internal static class DtrOverlayGroups
 
         EnsureDisplayOrder();
         SyncDefaultGroupDisplayName();
+        PluginEntryAffixSettings.NormalizeAllGroups();
 
         if (!IsSplitNativeMode() && IsNativeGroup(GetSelected()))
             Select(GetDefaultGroup().Id);
@@ -439,7 +440,10 @@ internal static class DtrOverlayGroups
         var scopedKey = GroupStyleKeys.PluginEntry(group.Id, pluginTitle);
 
         if (C.PluginEntryAffixesByTitle.TryGetValue(pluginTitle, out var affixes))
+        {
+            affixes.Normalize();
             group.PluginEntryAffixesByTitle[pluginTitle] = affixes;
+        }
 
         if (C.OverlaySlotMinWidthByTitle.TryGetValue(pluginTitle, out var width))
             group.OverlaySlotMinWidthByTitle[pluginTitle] = width;
