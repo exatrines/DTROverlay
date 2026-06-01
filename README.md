@@ -1,5 +1,9 @@
 # DTR Overlay
 
+<div align="center">
+<img src="https://github.com/exatrines/DalamudPlugins/blob/main/assets/images/DTROverlayIcon.png?raw=true" width="300px">
+</div>
+
 FF14 Dalamud plugin that replaces the Server Info Bar with a customizable ImGui overlay.
 
 ## Plugin Repository URL
