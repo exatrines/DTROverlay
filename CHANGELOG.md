@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0.2 — 2026-06-01
+
+### 修正
+
+- Follow Vanilla DTR 有効時に毎フレーム設定保存・ウィンドウ再構築が走り FPS が大幅に低下する不具合を修正（@rioriopu）
+- Follow Vanilla 時の `DtrVanillaBounds` 走査を同一フレーム内でキャッシュし、ATK ノード走査の重複を削減
+
 ## 1.2.0.1 — 2026-06-01
 
 ### 修正
