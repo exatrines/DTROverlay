@@ -22,8 +22,7 @@ public static partial class SettingsTab
                 ImGui.SameLine();
                 ImGui.BeginDisabled(!group.OverrideFontSizeScaleEnabled);
                 ImGui.SetNextItemWidth(72f);
-                if (ImGuiSettingControls.DrawOverlayFontScaleDrag("##overrideFontSizeScale", ref group.OverrideFontSizeScale))
-                    EzConfig.Save();
+                ImGuiSettingControls.DrawOverlayFontScaleDrag("##overrideFontSizeScale", ref group.OverrideFontSizeScale);
                 ImGui.EndDisabled();
                 ImGui.EndDisabled();
                 if (C.FollowVanillaDtr && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))

@@ -4,7 +4,8 @@ public static partial class SettingsTab
 {
     public static void Draw()
     {
-        ImGui.Checkbox("Enable", ref C.OverlayEnabled);
+        if (ImGui.Checkbox("Enable", ref C.OverlayEnabled))
+            EzConfig.Save();
         ImGui.Spacing();
 
         DrawShortcutsSection();

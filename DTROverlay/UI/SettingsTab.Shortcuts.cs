@@ -34,6 +34,7 @@ public static partial class SettingsTab
     private static void DrawOptionSection()
     {
         DtrImGui.SectionHeader("Option");
-        ImGui.Checkbox("Open plugin UI on middle-click", ref C.OpenPluginUiOnMiddleClick);
+        if (ImGui.Checkbox("Open plugin UI on middle-click", ref C.OpenPluginUiOnMiddleClick))
+            EzConfig.Save();
     }
 }
