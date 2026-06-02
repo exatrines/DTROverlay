@@ -80,10 +80,7 @@ internal static class OverlayColorPicker
     {
         ImGui.SameLine();
         if (DtrImGui.SmallIconButton(FontAwesomeIcon.Undo, $"##reset{column}_{idPrefix}"))
-        {
             reset();
-            EzConfig.Save();
-        }
 
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(GetResetTooltip(layoutKey, column));
@@ -142,6 +139,8 @@ internal static class OverlayColorPicker
             C.TextColor = color;
         else
             C.FixedWidthTextColors[layoutKey] = color;
+
+        EzConfig.Save();
     }
 
     private static void SaveEdgeColor(string layoutKey, Vector4 color)
@@ -150,6 +149,8 @@ internal static class OverlayColorPicker
             C.OutlineColor = color;
         else
             C.FixedWidthOutlineColors[layoutKey] = color;
+
+        EzConfig.Save();
     }
 
     private static void SaveShadowColor(string layoutKey, Vector4 color)
@@ -158,6 +159,8 @@ internal static class OverlayColorPicker
             C.ShadowColor = color;
         else
             C.FixedWidthShadowColors[layoutKey] = color;
+
+        EzConfig.Save();
     }
 
     private static void SaveEdgeStrength(string layoutKey, float strength)
@@ -166,6 +169,8 @@ internal static class OverlayColorPicker
             C.EdgeStrength = strength;
         else
             C.FixedWidthEdgeStrengths[layoutKey] = strength;
+
+        EzConfig.Save();
     }
 
     private static void SaveShadowThickness(string layoutKey, float thickness)
@@ -174,5 +179,7 @@ internal static class OverlayColorPicker
             C.ShadowThickness = thickness;
         else
             C.FixedWidthShadowThicknesses[layoutKey] = thickness;
+
+        EzConfig.Save();
     }
 }

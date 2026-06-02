@@ -301,14 +301,23 @@ internal static class DtrOverlayGroups
                 .Where(title => !group.EntryOrder.Contains(title))
                 .ToList();
 
+    /// <summary>
+    /// Merges live DTR bar entries into the group's saved order.
+    /// Does not remove titles that are not registered yet — plugins often register DTR entries
+    /// after login, and pruning early would drop the user's saved order (see issue with Follow Vanilla).
+    /// </summary>
     public static void SyncGroupOrder(DtrOverlayGroup group)
     {
-        if (IsNativeGroup(group))
+        if (IsNativeGroup(group) || !Svc.ClientState.IsLoggedIn)
             return;
 
         group.EntryOrder ??= [];
-        var validPlugins = Svc.DtrBar.Entries.Select(e => e.Title).ToHashSet();
-        group.EntryOrder.RemoveAll(id => !validPlugins.Contains(id));
+
+        foreach (var entry in Svc.DtrBar.Entries)
+        {
+            if (!group.EntryOrder.Contains(entry.Title))
+                group.EntryOrder.Add(entry.Title);
+        }
     }
 
     public static void ResetGroupToNativeOrder(DtrOverlayGroup group)

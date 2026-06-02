@@ -43,6 +43,9 @@ internal static class ImGuiSettingControls
             return false;
 
         DtrOverlayFonts.NotifyScaleChanged();
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            EzConfig.Save();
+
         return true;
     }
 

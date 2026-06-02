@@ -125,12 +125,14 @@ internal static class EntryFixedWidth
         if (OverlayEntryIds.IsDefaultText(layoutKey))
         {
             OverlayStyleResolver.ResetDefaultTextToOrigin();
+            EzConfig.Save();
             return;
         }
 
         if (OverlayEntryIds.IsDefaultSeparator(layoutKey))
         {
             OverlayStyleResolver.ResetDefaultSeparatorToOrigin();
+            EzConfig.Save();
             return;
         }
 
@@ -138,6 +140,7 @@ internal static class EntryFixedWidth
         {
             var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetSelected();
             OverlayStyleResolver.ResetOverrideTextToDefault(group);
+            EzConfig.Save();
             return;
         }
 
@@ -145,6 +148,7 @@ internal static class EntryFixedWidth
         {
             var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetSelected();
             OverlayStyleResolver.ResetOverrideNativeTextToDefault(group);
+            EzConfig.Save();
             return;
         }
 
@@ -152,6 +156,7 @@ internal static class EntryFixedWidth
         {
             var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetSelected();
             OverlayStyleResolver.ResetOverrideSeparatorToDefault(group);
+            EzConfig.Save();
             return;
         }
 
@@ -159,6 +164,7 @@ internal static class EntryFixedWidth
         {
             var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetSelected();
             OverlayStyleResolver.ResetOverrideNativeSeparatorToDefault(group);
+            EzConfig.Save();
             return;
         }
 
@@ -166,10 +172,12 @@ internal static class EntryFixedWidth
         {
             var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetSelected();
             OverlayStyleResolver.ResetOverrideDivisionSeparatorToDefault(group);
+            EzConfig.Save();
             return;
         }
 
         OverlayStyleResolver.ResetPluginTextToOverride(layoutKey);
+        EzConfig.Save();
     }
 
     public static void ResetEdgeStyleToDefault(string layoutKey)
@@ -183,12 +191,14 @@ internal static class EntryFixedWidth
             C.OutlineColor = outline;
             C.EdgeEnabled = edgeEnabled;
             C.EdgeStrength = edgeStrength;
+            EzConfig.Save();
             return;
         }
 
         C.FixedWidthOutlineColors[layoutKey] = outline;
         C.FixedWidthEdgeEnabled[layoutKey] = edgeEnabled;
         C.FixedWidthEdgeStrengths[layoutKey] = edgeStrength;
+        EzConfig.Save();
     }
 
     public static void ResetShadowStyleToDefault(string layoutKey)
@@ -202,12 +212,14 @@ internal static class EntryFixedWidth
             C.ShadowColor = shadow;
             C.ShadowEnabled = shadowEnabled;
             C.ShadowThickness = shadowThickness;
+            EzConfig.Save();
             return;
         }
 
         C.FixedWidthShadowColors[layoutKey] = shadow;
         C.FixedWidthShadowEnabled[layoutKey] = shadowEnabled;
         C.FixedWidthShadowThicknesses[layoutKey] = shadowThickness;
+        EzConfig.Save();
     }
 
     private static (Vector4 Outline, bool EdgeEnabled, float EdgeStrength) GetParentEdgeStored(string layoutKey)
@@ -293,15 +305,20 @@ internal static class EntryFixedWidth
             C.FixedTextColorEnabledIds.Add(layoutKey);
 
             if (OverlayEntryIds.IsDefaultText(layoutKey))
+            {
+                EzConfig.Save();
                 return;
+            }
 
             if (!C.FixedWidthTextColors.ContainsKey(layoutKey))
                 C.FixedWidthTextColors[layoutKey] = OverlayStyleResolver.GetDefaultTextColorEffective();
 
+            EzConfig.Save();
             return;
         }
 
         C.FixedTextColorEnabledIds.Remove(layoutKey);
+        EzConfig.Save();
     }
 
     public static void SetEdgeStyleEnabled(string layoutKey, bool enabled)
@@ -315,10 +332,12 @@ internal static class EntryFixedWidth
         {
             C.FixedEdgeStyleEnabledIds.Add(layoutKey);
             SeedEdgeStyle(layoutKey);
+            EzConfig.Save();
             return;
         }
 
         C.FixedEdgeStyleEnabledIds.Remove(layoutKey);
+        EzConfig.Save();
     }
 
     public static void SetShadowStyleEnabled(string layoutKey, bool enabled)
@@ -332,10 +351,12 @@ internal static class EntryFixedWidth
         {
             C.FixedShadowStyleEnabledIds.Add(layoutKey);
             SeedShadowStyle(layoutKey);
+            EzConfig.Save();
             return;
         }
 
         C.FixedShadowStyleEnabledIds.Remove(layoutKey);
+        EzConfig.Save();
     }
 
     private static void SeedEdgeStyle(string layoutKey)

@@ -109,13 +109,22 @@ public static partial class SettingsTab
                 ref side,
                 (int)FollowVanillaDtrSide.Left,
                 (int)FollowVanillaDtrSide.Right);
-            C.FollowVanillaDtrSide = (FollowVanillaDtrSide)side;
+            var newSide = (FollowVanillaDtrSide)side;
+            if (C.FollowVanillaDtrSide != newSide)
+            {
+                C.FollowVanillaDtrSide = newSide;
+                EzConfig.Save();
+            }
 
             ImGui.SetNextItemWidth(88f);
-            ImGui.DragFloat("X Offset##followVanilla", ref C.FollowVanillaHorizontalOffset, 0.1f, -100f, 100f, "%.1f");
+            if (ImGui.DragFloat("X Offset##followVanilla", ref C.FollowVanillaHorizontalOffset, 0.1f, -100f, 100f, "%.1f")
+                && ImGui.IsItemDeactivatedAfterEdit())
+                EzConfig.Save();
             ImGui.SameLine();
             ImGui.SetNextItemWidth(88f);
-            ImGui.DragFloat("Y Offset##followVanilla", ref C.FollowVanillaVerticalOffset, 0.1f, -30f, 30f, "%.1f");
+            if (ImGui.DragFloat("Y Offset##followVanilla", ref C.FollowVanillaVerticalOffset, 0.1f, -30f, 30f, "%.1f")
+                && ImGui.IsItemDeactivatedAfterEdit())
+                EzConfig.Save();
             ImGui.SameLine();
             ImGui.SetNextItemWidth(88f);
             ImGuiSettingControls.DrawOverlayFontScaleDrag("Font Size Scale##followVanilla", ref C.FollowVanillaFontSizeScale);

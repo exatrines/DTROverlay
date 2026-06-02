@@ -9,7 +9,12 @@ public static partial class SettingsTab
         DtrImGui.SectionHeader("Follow Vanilla DTR");
 
         if (ImGui.Checkbox("Follow Vanilla DTR", ref C.FollowVanillaDtr))
+        {
+            DtrOverlayGroups.SyncDefaultGroupDisplayName();
+            DtrOverlayGroups.ApplyFollowVanillaConstraints();
             OverlayWindowHost.RequestRefresh();
+            EzConfig.Save();
+        }
 
         if (!C.FollowVanillaDtr)
             return;
