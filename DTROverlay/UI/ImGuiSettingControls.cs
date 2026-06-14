@@ -52,6 +52,32 @@ internal static class ImGuiSettingControls
     public static bool DrawSeparatorSlotWidthDrag(string id, ref int widthPx) =>
         DragInt(id, ref widthPx, 1f, 0, OverlaySlotWidthSettings.MaxWidth);
 
+    public static bool DrawOverlayOriginRadios(ref OverlayPositionOrigin origin)
+    {
+        var selected = (int)origin;
+        var changed = false;
+
+        if (ImGui.RadioButton("Top left", ref selected, (int)OverlayPositionOrigin.TopLeft))
+            changed = true;
+
+        ImGui.SameLine();
+        if (ImGui.RadioButton("Top right", ref selected, (int)OverlayPositionOrigin.TopRight))
+            changed = true;
+
+        if (ImGui.RadioButton("Bottom left", ref selected, (int)OverlayPositionOrigin.BottomLeft))
+            changed = true;
+
+        ImGui.SameLine();
+        if (ImGui.RadioButton("Bottom right", ref selected, (int)OverlayPositionOrigin.BottomRight))
+            changed = true;
+
+        if (!changed && selected == (int)origin)
+            return false;
+
+        origin = (OverlayPositionOrigin)selected;
+        return true;
+    }
+
     public static bool DrawTooltipPositionRadios(ref TooltipPosition position)
     {
         var selected = (int)position;

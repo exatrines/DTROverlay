@@ -19,14 +19,19 @@ public sealed class OverlayWindow : Window
     private OverlayPositionOrigin? _appliedOrigin;
     private bool _followVanillaPaddingPushed;
     private float _lastWindowWidth;
+    private float _lastWindowHeight;
     private IDisposable _styleScope;
 
     public string GroupId => _groupId;
 
     private static readonly Dictionary<string, float> LastWidthsByGroup = [];
+    private static readonly Dictionary<string, float> LastHeightsByGroup = [];
 
     public static float GetLastWidthForGroup(string groupId) =>
         LastWidthsByGroup.GetValueOrDefault(groupId);
+
+    public static float GetLastHeightForGroup(string groupId) =>
+        LastHeightsByGroup.GetValueOrDefault(groupId);
 
     public OverlayWindow(string groupId)
         : base($"DTR Overlay##dtroverlayHud_{groupId}", BaseFlags | ImGuiWindowFlags.NoBackground, true)
@@ -87,7 +92,7 @@ public sealed class OverlayWindow : Window
         {
             OverlayPositioning.MigrateLegacyTopLeftAnchor(_group);
             if (_appliedOrigin is { } previousOrigin)
-                OverlayPositioning.OnOriginChanged(_group, previousOrigin, _lastWindowWidth);
+                OverlayPositioning.OnOriginChanged(_group, previousOrigin, _lastWindowWidth, _lastWindowHeight);
             _appliedOrigin = _group.OverlayPositionOrigin;
         }
 
@@ -114,6 +119,12 @@ public sealed class OverlayWindow : Window
             {
                 _lastWindowWidth = size.X;
                 LastWidthsByGroup[_groupId] = size.X;
+            }
+
+            if (size.Y > 0f)
+            {
+                _lastWindowHeight = size.Y;
+                LastHeightsByGroup[_groupId] = size.Y;
             }
 
             if (_group.OverlayEditMode && !FollowVanillaDtrMode.IsActive)

@@ -111,23 +111,22 @@ public static partial class SettingsTab
         var previousOrigin = group.OverlayPositionOrigin;
 
         ImGuiSettingControls.LabeledIndented("Overlay origin :", () =>
+            ImGuiSettingControls.DrawOverlayOriginRadios(ref group.OverlayPositionOrigin));
+
+        if (ImGui.IsItemHovered())
         {
-            var origin = (int)group.OverlayPositionOrigin;
-            ImGuiSettingControls.RadioPair(
-                "Top left",
-                "Top right",
-                ref origin,
-                (int)OverlayPositionOrigin.TopLeft,
-                (int)OverlayPositionOrigin.TopRight);
-            group.OverlayPositionOrigin = (OverlayPositionOrigin)origin;
-        });
+            ImGui.SetTooltip(
+                "Top origins: X/Y offset from the top edge. "
+                + "Bottom origins: X/Y offset from the bottom edge.");
+        }
 
         if (group.OverlayPositionOrigin != previousOrigin)
         {
             OverlayPositioning.OnOriginChanged(
                 group,
                 previousOrigin,
-                OverlayWindow.GetLastWidthForGroup(group.Id));
+                OverlayWindow.GetLastWidthForGroup(group.Id),
+                OverlayWindow.GetLastHeightForGroup(group.Id));
             EzConfig.Save();
         }
     }

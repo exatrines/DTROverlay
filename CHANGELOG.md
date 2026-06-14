@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0.5 — 2026-06-02
+
+### 変更
+
+- Overlay origin に **Bottom left** / **Bottom right** を追加（下端からの Y オフセット、原点切替・Edit mode ドラッグに対応）
+- 設定 UI から General / Settings タブを廃止し、Settings の内容のみを直接表示
+
 ## 1.2.0.4 — 2026-06-02
 
 ### 修正
