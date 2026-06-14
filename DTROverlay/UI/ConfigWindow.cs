@@ -12,28 +12,9 @@ public static class ConfigWindow
         var bodyHeight = Math.Max(80f, ImGui.GetContentRegionAvail().Y - footerHeight);
 
         ImGui.BeginChild("##DtrBody", new Vector2(0, bodyHeight));
-        if (ImGui.BeginTabBar("DtrOverlayTabs"))
-        {
-            DrawTab("General", GeneralTab.Draw);
-            DrawTab("Settings", SettingsTab.Draw);
-            ImGui.EndTabBar();
-        }
-
-        ImGui.EndChild();
-
-        ConfigFooter.Draw();
-    }
-
-    private static void DrawTab(string name, Action draw)
-    {
-        if (!ImGui.BeginTabItem(name))
-            return;
-
-        var contentHeight = ImGui.GetContentRegionAvail().Y;
-        ImGui.BeginChild(name + "child", new Vector2(0, contentHeight));
         try
         {
-            draw();
+            SettingsTab.Draw();
         }
         catch (Exception e)
         {
@@ -41,6 +22,7 @@ public static class ConfigWindow
         }
 
         ImGui.EndChild();
-        ImGui.EndTabItem();
+
+        ConfigFooter.Draw();
     }
 }

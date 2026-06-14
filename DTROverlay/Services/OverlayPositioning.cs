@@ -21,25 +21,9 @@ internal static class OverlayPositioning
         if (FollowVanillaDtrMode.IsActive && TryApplyFollowVanillaPosition())
             return;
 
-        var viewport = ImGuiHelpers.MainViewport;
-        var y = viewport.Pos.Y + group.OverlayPosition.Y + DtrStyle.VerticalOffset;
-
-        Vector2 pos;
-        Vector2 pivot;
-        if (group.OverlayPositionOrigin == OverlayPositionOrigin.TopRight)
-        {
-            pos = new Vector2(
-                viewport.Pos.X + viewport.Size.X - group.OverlayPosition.X,
-                y);
-            pivot = new Vector2(1f, 0f);
-        }
-        else
-        {
-            pos = new Vector2(viewport.Pos.X + group.OverlayPosition.X, y);
-            pivot = Vector2.Zero;
-        }
-
-        ImGui.SetNextWindowPos(pos, ImGuiCond.Always, pivot);
+        var anchor = OverlayPositionOriginHelper.GetAnchorScreenPosition(group, group.OverlayPositionOrigin);
+        var pivot = OverlayPositionOriginHelper.GetPivot(group.OverlayPositionOrigin);
+        ImGui.SetNextWindowPos(anchor, ImGuiCond.Always, pivot);
     }
 
     private static bool TryApplyFollowVanillaPosition(bool inFrame = false)
@@ -105,33 +89,41 @@ internal static class OverlayPositioning
 
     public static void ApplyDragDelta(DtrOverlayGroup group, Vector2 delta)
     {
-        if (group.OverlayPositionOrigin == OverlayPositionOrigin.TopRight)
+        if (OverlayPositionOriginHelper.IsRight(group.OverlayPositionOrigin))
             group.OverlayPosition.X -= delta.X;
         else
             group.OverlayPosition.X += delta.X;
 
-        group.OverlayPosition.Y += delta.Y;
+        if (OverlayPositionOriginHelper.IsBottom(group.OverlayPositionOrigin))
+            group.OverlayPosition.Y -= delta.Y;
+        else
+            group.OverlayPosition.Y += delta.Y;
+
         EzConfig.Save();
     }
 
-    public static void OnOriginChanged(DtrOverlayGroup group, OverlayPositionOrigin previousOrigin, float lastWindowWidth)
+    public static void OnOriginChanged(
+        DtrOverlayGroup group,
+        OverlayPositionOrigin previousOrigin,
+        float lastWindowWidth,
+        float lastWindowHeight)
     {
-        if (previousOrigin == group.OverlayPositionOrigin || lastWindowWidth <= 0f)
+        if (previousOrigin == group.OverlayPositionOrigin || lastWindowWidth <= 0f || lastWindowHeight <= 0f)
             return;
 
-        var viewport = ImGuiHelpers.MainViewport;
-        if (previousOrigin == OverlayPositionOrigin.TopLeft
-            && group.OverlayPositionOrigin == OverlayPositionOrigin.TopRight)
-        {
-            var rightEdge = viewport.Pos.X + group.OverlayPosition.X + lastWindowWidth;
-            group.OverlayPosition.X = viewport.Pos.X + viewport.Size.X - rightEdge;
-        }
-        else if (previousOrigin == OverlayPositionOrigin.TopRight
-            && group.OverlayPositionOrigin == OverlayPositionOrigin.TopLeft)
-        {
-            var rightEdge = viewport.Pos.X + viewport.Size.X - group.OverlayPosition.X;
-            group.OverlayPosition.X = rightEdge - lastWindowWidth - viewport.Pos.X;
-        }
+        var anchor = OverlayPositionOriginHelper.GetAnchorScreenPosition(group, previousOrigin);
+        var topLeft = OverlayPositionOriginHelper.GetWindowTopLeft(
+            anchor,
+            previousOrigin,
+            lastWindowWidth,
+            lastWindowHeight);
+
+        OverlayPositionOriginHelper.SetOverlayPositionFromWindowTopLeft(
+            group,
+            group.OverlayPositionOrigin,
+            topLeft,
+            lastWindowWidth,
+            lastWindowHeight);
 
         EzConfig.Save();
     }
