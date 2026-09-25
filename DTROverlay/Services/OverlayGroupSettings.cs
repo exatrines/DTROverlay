@@ -2,10 +2,10 @@ namespace DTROverlay.Services;
 
 internal static class OverlayGroupSettings
 {
-    public static DtrOverlayGroup NativeServerInfoGroup => DtrOverlayGroups.GetNativeGroup();
+    public static DtrOverlayGroup NativeServerInfoGroup => DtrOverlayGroups.GetNativeOverlay();
 
     public static bool IsServerInfoPartVisible(string partId) =>
-        !C.FollowVanillaDtr && !NativeServerInfoGroup.HiddenServerInfoParts.Contains(partId);
+        !C.FollowNativeDtr && !NativeServerInfoGroup.HiddenServerInfoParts.Contains(partId);
 
     public static ServerInfoDisplayMode GetServerInfoDisplayMode() =>
         NativeServerInfoGroup.ServerInfoDisplayMode;

@@ -24,13 +24,13 @@ internal static class DtrPluginUiOpener
 
     private static IExposedPlugin ResolvePlugin(string entryTitle)
     {
-        foreach (var plugin in Svc.PluginInterface.InstalledPlugins)
+        foreach (var plugin in PluginServices.PluginInterface.InstalledPlugins)
         {
             if (MatchesTitle(plugin, entryTitle))
                 return plugin;
         }
 
-        var entry = Svc.DtrBar.Entries.FirstOrDefault(e => e.Title == entryTitle);
+        var entry = PluginServices.DtrBar.Entries.FirstOrDefault(e => e.Title == entryTitle);
         if (entry == null)
             return null;
 
@@ -38,7 +38,7 @@ internal static class DtrPluginUiOpener
         if (ownerInternalName == null)
             return null;
 
-        return Svc.PluginInterface.InstalledPlugins.FirstOrDefault(p =>
+        return PluginServices.PluginInterface.InstalledPlugins.FirstOrDefault(p =>
             string.Equals(p.InternalName, ownerInternalName, StringComparison.OrdinalIgnoreCase));
     }
 

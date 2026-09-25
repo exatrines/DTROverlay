@@ -5,43 +5,6 @@ namespace DTROverlay.UI;
 
 public static partial class DtrImGui
 {
-    public static void SectionHeader(string label) =>
-        SectionHeader(label, null, null);
-
-    public static void SectionHeader(string label, Action onTrailingButton, string trailingButtonId, string trailingButtonTooltip = null)
-    {
-        ImGui.Spacing();
-
-        var rowY = ImGui.GetCursorPosY();
-        var rowHeight = onTrailingButton != null && !string.IsNullOrEmpty(trailingButtonId)
-            ? SquareIconButtonSize()
-            : ImGui.GetTextLineHeight();
-        var labelX = ImGui.GetCursorPosX();
-
-        if (onTrailingButton != null && !string.IsNullOrEmpty(trailingButtonId))
-        {
-            var buttonSize = SquareIconButtonSize();
-            ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionMax().X - buttonSize, rowY));
-            if (SmallIconButton(FontAwesomeIcon.Undo, trailingButtonId))
-                onTrailingButton();
-
-            if (!string.IsNullOrEmpty(trailingButtonTooltip) && ImGui.IsItemHovered())
-                ImGui.SetTooltip(trailingButtonTooltip);
-        }
-
-        ImGui.SetCursorPos(new Vector2(labelX, rowY + rowHeight - ImGui.GetTextLineHeight()));
-        ImGui.TextColored(ImGuiColors.DalamudGrey, label);
-        ImGui.SetCursorPosY(rowY + rowHeight);
-
-        ImGui.Separator();
-        ImGui.Spacing();
-    }
-
-    public static bool SmallIconButton(FontAwesomeIcon icon, string id) =>
-        ImGuiEx.IconButton(icon, id, new Vector2(SquareIconButtonSize(), SquareIconButtonSize()));
-
-    private static float SquareIconButtonSize() => ImGui.GetFrameHeight();
-
     public static void DrawHorizontalEntries(IReadOnlyList<VisibleDtrEntry> entries)
     {
         if (entries.Count == 0)
@@ -49,7 +12,7 @@ public static partial class DtrImGui
 
         using var _ = BeginEntryDrawScope();
         UpdateCachedLineHeight();
-        OverlayPositioning.RefineFollowVanillaPositionInFrame();
+        OverlayPositioning.RefineFollowNativePositionInFrame();
         DrawHorizontalEntriesCore(entries);
     }
 
@@ -63,7 +26,7 @@ public static partial class DtrImGui
 
         return ImGui.GetFontSize() > 0f
             ? ImGui.GetFontSize()
-            : UiBuilder.DefaultFont.FontSize * FollowVanillaFontScale.ActiveScale;
+            : UiBuilder.DefaultFont.FontSize * FollowNativeFontScale.ActiveScale;
     }
 
     public static void UpdateCachedLineHeight()
@@ -87,12 +50,12 @@ public static partial class DtrImGui
         ImGui.CalcTextSize("ET 00:00").Y;
 
     public static float EstimateTextDrawTopInset() =>
-        FollowVanillaDtrMode.IsActive
-            ? FollowVanillaFontScale.EstimateTextDrawTopInset()
+        FollowNativeDtrMode.AppliesTo(OverlayStyleContext.Group)
+            ? FollowNativeFontScale.EstimateTextDrawTopInset()
             : ManualEstimateTextDrawTopInset();
 
     public static float EstimateOverlayContentHeight() =>
-        FollowVanillaDtrMode.IsActive
-            ? FollowVanillaFontScale.EstimateContentHeight()
+        FollowNativeDtrMode.AppliesTo(OverlayStyleContext.Group)
+            ? FollowNativeFontScale.EstimateContentHeight()
             : UiBuilder.DefaultFont.FontSize * OverlayStyleResolver.GetEffectiveOverlayFontScale() * 0.86f;
 }

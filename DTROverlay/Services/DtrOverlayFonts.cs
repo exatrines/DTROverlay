@@ -129,7 +129,7 @@ internal static class DtrOverlayFonts
 
         public GroupFontResources(string groupId)
         {
-            _atlas = Svc.PluginInterface.UiBuilder.CreateFontAtlas(
+            _atlas = PluginServices.PluginInterface.UiBuilder.CreateFontAtlas(
                 FontAtlasAutoRebuildMode.Async,
                 isGlobalScaled: true,
                 debugName: $"DTROverlay.Overlay.{groupId}");

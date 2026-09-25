@@ -1,12 +1,13 @@
 namespace DTROverlay.Services;
 
-internal static class FollowVanillaDtrMode
+internal static class FollowNativeDtrMode
 {
-    public static bool IsActive => C.FollowVanillaDtr && C.OverlayEnabled;
+    public static bool IsActive => C.FollowNativeDtr;
+
+    public static bool AppliesTo(DtrOverlayGroup group) =>
+        IsActive && group != null && DtrOverlayGroups.IsDefaultOverlay(group);
 
     public static bool IsVanillaDtrVisible => DtrVanillaBounds.IsAddonVisible();
-
-    public static bool ShouldRenderOverlay => IsActive && IsVanillaDtrVisible;
 
     /// <summary>
     /// Inserts the division separator at the start of the plugin list when true, or at the end when false.
@@ -16,54 +17,45 @@ internal static class FollowVanillaDtrMode
     /// </summary>
     public static bool ShouldPrependDivisionSeparatorToPluginList()
     {
-        var overlayOnLeftOfVanilla = C.FollowVanillaDtrSide == FollowVanillaDtrSide.Left;
-        var pluginsFlowLeftToRight = OverlayPluginFlow.UseHorizontalLeftToRight(DtrOverlayGroups.GetDefaultGroup());
+        var overlayOnLeftOfVanilla = C.FollowNativeDtrSide == FollowNativeDtrSide.Left;
+        var pluginsFlowLeftToRight = OverlayPluginFlow.UseHorizontalLeftToRight(DtrOverlayGroups.GetDefaultOverlay());
         return overlayOnLeftOfVanilla != pluginsFlowLeftToRight;
     }
 
     public static void EnforceLayoutConstraints()
     {
-        if (!C.FollowVanillaDtr)
+        if (!C.FollowNativeDtr)
             return;
 
-        if (C.OverlayGroups == null)
+        if (C.Overlays == null)
             return;
 
-        // このメソッドは毎フレーム PreDraw から呼ばれる。以前は無条件で EzConfig.Save() と
+        // このメソッドは毎フレーム PreDraw から呼ばれる。以前は無条件で C.Save() と
         // OverlayWindowHost.RequestRefresh() を実行していたため、毎フレーム設定の JSON 直列化・
         // ディスク書き込みとウィンドウ再構築が走り FPS が低下していた。
         // 制約適用は冪等なので、実際に値が変化したフレームのみ保存・再描画要求を行う。
         var changed = false;
 
-        foreach (var group in C.OverlayGroups)
+        var defaultGroup = DtrOverlayGroups.GetDefaultOverlay();
+        if (defaultGroup.OverlayEditMode)
         {
-            if (group.OverlayEditMode)
-            {
-                group.OverlayEditMode = false;
-                changed = true;
-            }
-
-            if (group.OverrideFontSizeScaleEnabled)
-            {
-                group.OverrideFontSizeScaleEnabled = false;
-                changed = true;
-            }
+            defaultGroup.OverlayEditMode = false;
+            changed = true;
         }
 
-        var defaultGroup = DtrOverlayGroups.GetDefaultGroup();
         if (defaultGroup.LayoutMode != OverlayLayoutMode.Horizontal)
         {
             defaultGroup.LayoutMode = OverlayLayoutMode.Horizontal;
             changed = true;
         }
 
-        if (DtrOverlayGroups.ApplyFollowVanillaConstraintsCore())
+        if (DtrOverlayGroups.ApplyFollowNativeConstraintsCore())
             changed = true;
 
         if (!changed)
             return;
 
-        EzConfig.Save();
+        C.Save();
         OverlayWindowHost.RequestRefresh();
     }
 }

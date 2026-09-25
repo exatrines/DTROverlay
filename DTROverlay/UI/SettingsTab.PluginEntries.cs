@@ -1,4 +1,3 @@
-using System.Linq;
 using Dalamud.Game.Gui.Dtr;
 using DTROverlay.Services;
 
@@ -6,59 +5,54 @@ namespace DTROverlay.UI;
 
 public static partial class SettingsTab
 {
+    private static string _addPluginChoice = "";
+
     private static void DrawEntriesSection(DtrOverlayGroup group)
     {
-        DtrImGui.SectionHeader(
-            "Plugin entries",
-            () => DtrEntryOrder.ResetToNativeOrder(group),
-            "##dtrEntryOrderReset",
-            "Reset entry order from Dalamud DTR settings.");
+        MirageUi.SubHeader("DTR entries");
 
-        ImGui.Spacing();
         DrawPluginAddControl(group);
-        ImGui.Spacing();
         DrawDtrEntryTable(group);
     }
 
     private static void DrawPluginAddControl(DtrOverlayGroup group)
     {
         var available = DtrOverlayGroups.GetAvailablePluginTitles(group);
-
-        ImGui.SetNextItemWidth(200f);
-        if (ImGui.BeginCombo("##addPlugin", "Add plugin..."))
+        if (MirageUi.Dropdown(
+                "Add plugin",
+                ref _addPluginChoice,
+                available,
+                "Add plugin...",
+                "addPlugin",
+                allowClear: false,
+                emptyMessage: "No plugins available"))
         {
-            foreach (var title in available)
-            {
-                if (ImGui.Selectable(title))
-                    DtrOverlayGroups.AddPlugin(group, title);
-            }
+            if (string.IsNullOrEmpty(_addPluginChoice))
+                return;
 
-            ImGui.EndCombo();
+            DtrOverlayGroups.AddPlugin(group, _addPluginChoice);
+            _addPluginChoice = "";
         }
     }
 
     private static void DrawDtrEntryTable(DtrOverlayGroup group)
     {
-        DtrOverlayGroups.SyncGroupOrder(group);
+        DtrOverlayGroups.SyncOverlayOrder(group);
 
-        ImGui.TextUnformatted("Plugin entries :");
-        ImGuiSettingControls.Indented(() =>
-        {
-            if (!ImGuiEx.BeginDefaultTable("##dtrEntries", ["^", "", "Plugin", "prefix / suffix", "Min Width", "Text", "Edge", "Shadow", ""]))
-                return;
+        if (!SettingsTables.BeginDefaultTable("##dtrEntries", ["^", "", "Plugin", "prefix / suffix", "Min Width", "Text", "Edge", "Shadow", ""]))
+            return;
 
-            var pluginIds = DtrEntryOrder.GetOrderedPluginIdsForDisplay(group);
-            for (var i = 0; i < pluginIds.Count; i++)
-                DrawDtrEntryTableRow(group, pluginIds, i);
+        var pluginIds = DtrEntryOrder.GetOrderedPluginIdsForDisplay(group);
+        for (var i = 0; i < pluginIds.Count; i++)
+            DrawDtrEntryTableRow(group, pluginIds, i);
 
-            ImGui.EndTable();
-        });
+        ImGui.EndTable();
     }
 
     private static void DrawDtrEntryTableRow(DtrOverlayGroup group, IReadOnlyList<string> pluginIds, int displayIndex)
     {
         var id = pluginIds[displayIndex];
-        var entry = Svc.DtrBar.Entries.FirstOrDefault(e => e.Title == id);
+        var entry = PluginServices.DtrBar.Entries.FirstOrDefault(e => e.Title == id);
         if (entry == null)
             return;
 
@@ -66,126 +60,124 @@ public static partial class SettingsTab
         if (orderIndex < 0)
             return;
 
+        var iconSize = SmallIconSize();
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
         ImGui.PushID(orderIndex);
-        ImGui.BeginDisabled(displayIndex == 0);
-        if (ImGuiEx.SmallIconButton(FontAwesomeIcon.ArrowUp) && orderIndex > 0)
+        if (MirageUi.IconButton(FontAwesomeIcon.ArrowUp, "moveUp", iconSize, enabled: displayIndex > 0)
+            && orderIndex > 0)
             DtrEntryOrder.MoveUp(group.EntryOrder, orderIndex);
-        ImGui.EndDisabled();
 
         ImGui.SameLine();
-        ImGui.BeginDisabled(orderIndex >= group.EntryOrder.Count - 1);
-        if (ImGuiEx.SmallIconButton(FontAwesomeIcon.ArrowDown) && orderIndex < group.EntryOrder.Count - 1)
+        if (MirageUi.IconButton(
+                FontAwesomeIcon.ArrowDown,
+                "moveDown",
+                iconSize,
+                enabled: orderIndex < group.EntryOrder.Count - 1)
+            && orderIndex < group.EntryOrder.Count - 1)
             DtrEntryOrder.MoveDown(group.EntryOrder, orderIndex);
-        ImGui.EndDisabled();
         ImGui.PopID();
 
         ImGui.TableNextColumn();
         var showInOverlay = !group.HiddenEntryTitles.Contains(id);
-        if (ImGui.Checkbox($"##overlay_{id}", ref showInOverlay))
+        if (MirageUi.Checkbox($"##overlay_{id}", ref showInOverlay))
         {
             if (showInOverlay)
                 group.HiddenEntryTitles.Remove(id);
             else
                 group.HiddenEntryTitles.Add(id);
-            EzConfig.Save();
+            C.Save();
         }
 
-        ImGui.BeginDisabled(!showInOverlay);
+        using (MirageUi.DisabledIf(!showInOverlay))
+        {
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(entry.Title);
+
+            ImGui.TableNextColumn();
+            DrawPluginAffixControls(group, entry.Title);
+
+            ImGui.TableNextColumn();
+            DrawSlotWidthControls(group, entry);
+
+            var styleKey = GroupStyleKeys.PluginEntry(group.Id, entry.Title);
+            ImGui.TableNextColumn();
+            OverlayColorPicker.DrawTextColumn(styleKey, $"table_{entry.Title}", rowEnabled: true);
+
+            ImGui.TableNextColumn();
+            OverlayColorPicker.DrawEdgeColumn(styleKey, $"table_{entry.Title}", rowEnabled: true);
+
+            ImGui.TableNextColumn();
+            OverlayColorPicker.DrawShadowColumn(styleKey, $"table_{entry.Title}", rowEnabled: true);
+        }
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(entry.Title);
-
-        ImGui.TableNextColumn();
-        DrawPluginAffixControls(group, entry.Title);
-
-        ImGui.TableNextColumn();
-        DrawSlotWidthControls(group, entry);
-
-        var styleKey = GroupStyleKeys.PluginEntry(group.Id, entry.Title);
-        ImGui.TableNextColumn();
-        OverlayColorPicker.DrawTextColumn(styleKey, $"table_{entry.Title}", rowEnabled: true);
-
-        ImGui.TableNextColumn();
-        OverlayColorPicker.DrawEdgeColumn(styleKey, $"table_{entry.Title}", rowEnabled: true);
-
-        ImGui.TableNextColumn();
-        OverlayColorPicker.DrawShadowColumn(styleKey, $"table_{entry.Title}", rowEnabled: true);
-
-        ImGui.EndDisabled();
-
-        ImGui.TableNextColumn();
-        ImGui.PushID($"remove_{id}");
-        if (ImGuiEx.SmallIconButton(FontAwesomeIcon.Trash))
+        if (MirageUi.IconButton(FontAwesomeIcon.Trash, $"remove_{id}", iconSize, tooltip: "Remove from overlay"))
             DtrOverlayGroups.RemovePlugin(group, id);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Remove from group");
-        ImGui.PopID();
     }
 
     private static void DrawPluginAffixControls(DtrOverlayGroup group, string entryTitle)
     {
         var affixes = PluginEntryAffixSettings.GetOrCreate(group, entryTitle);
 
-        ImGui.SetNextItemWidth(88f);
-        var prefixChanged = ImGui.InputTextWithHint($"##prefix_{entryTitle}", "prefix", ref affixes.Prefix, 128);
+        var prefixChanged = MirageUi.InputText(
+            "",
+            ref affixes.Prefix,
+            128,
+            $"prefix_{entryTitle}",
+            "prefix",
+            88f);
 
         ImGui.SameLine();
         ImGui.TextUnformatted("/");
-
         ImGui.SameLine();
-        ImGui.SetNextItemWidth(88f);
-        var suffixChanged = ImGui.InputTextWithHint($"##suffix_{entryTitle}", "suffix", ref affixes.Suffix, 128);
+
+        var suffixChanged = MirageUi.InputText(
+            "",
+            ref affixes.Suffix,
+            128,
+            $"suffix_{entryTitle}",
+            "suffix",
+            88f);
 
         if (!prefixChanged && !suffixChanged)
             return;
 
         affixes.Normalize();
-        EzConfig.Save();
+        C.Save();
     }
 
     private static void DrawSlotWidthControls(DtrOverlayGroup group, IReadOnlyDtrBarEntry entry)
     {
         if (entry.MinimumWidth > 0)
         {
-            ImGui.BeginDisabled();
-            ImGui.TextUnformatted(entry.MinimumWidth.ToString());
+            using (MirageUi.DisabledIf(true))
+                ImGui.TextUnformatted(entry.MinimumWidth.ToString());
 
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            {
-                ImGui.SetTooltip(
-                    $"Plugin DTR MinimumWidth ({entry.MinimumWidth} px). "
-                    + $"Overlay uses {DtrEntrySlotWidth.GetScaledFixedWidth(entry):0.##} px after font scale.");
-            }
-
-            ImGui.EndDisabled();
+            MirageUi.Tooltip(
+                $"Plugin DTR MinimumWidth ({entry.MinimumWidth} px). "
+                + $"Overlay uses {DtrEntrySlotWidth.GetScaledFixedWidth(entry):0.##} px after font scale.");
             return;
         }
 
         var overlayMin = OverlaySlotWidthSettings.Get(group, entry.Title);
-        ImGui.SetNextItemWidth(88f);
-        if (ImGuiSettingControls.DragInt($"##overlayMinWidth_{entry.Title}", ref overlayMin, 1f, 0, OverlaySlotWidthSettings.MaxWidth))
+        if (MirageUi.SliderInt("", ref overlayMin, 0, OverlaySlotWidthSettings.MaxWidth, $"overlayMinWidth_{entry.Title}", 88f))
         {
             OverlaySlotWidthSettings.Set(group, entry.Title, overlayMin);
-            EzConfig.Save();
+            C.Save();
         }
 
-        if (ImGui.IsItemHovered())
+        if (overlayMin > 0)
         {
-            if (overlayMin > 0)
-            {
-                ImGui.SetTooltip(
-                    $"Fixed overlay slot: {overlayMin} px × font scale "
-                    + $"({DtrEntrySlotWidth.GetScaledFixedWidth(entry):0.##} px). "
-                    + "0 = follow measured text width.");
-            }
-            else
-            {
-                ImGui.SetTooltip(
-                    "Minimum overlay slot width (0–1000 px). 0 follows measured text (may flicker).");
-            }
+            MirageUi.Tooltip(
+                $"Fixed overlay slot: {overlayMin} px × font scale "
+                + $"({DtrEntrySlotWidth.GetScaledFixedWidth(entry):0.##} px). "
+                + "0 = follow measured text width.");
+        }
+        else
+        {
+            MirageUi.Tooltip("Minimum overlay slot width (0–1000 px). 0 follows measured text (may flicker).");
         }
     }
 }

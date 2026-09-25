@@ -18,7 +18,7 @@ internal static class OverlayPositioning
 
     public static void ApplyWindowPosition(DtrOverlayGroup group)
     {
-        if (FollowVanillaDtrMode.IsActive && TryApplyFollowVanillaPosition())
+        if (FollowNativeDtrMode.AppliesTo(group) && TryApplyFollowNativePosition())
             return;
 
         var anchor = OverlayPositionOriginHelper.GetAnchorScreenPosition(group, group.OverlayPositionOrigin);
@@ -26,30 +26,26 @@ internal static class OverlayPositioning
         ImGui.SetNextWindowPos(anchor, ImGuiCond.Always, pivot);
     }
 
-    private static bool TryApplyFollowVanillaPosition(bool inFrame = false)
+    private static bool TryApplyFollowNativePosition()
     {
-        if (!TryGetFollowVanillaWindowPos(out var pos, out var pivot))
+        if (!TryGetFollowNativeWindowPos(out var pos, out var pivot))
             return false;
 
-        if (inFrame)
-            ImGui.SetWindowPos(new Vector2(ImGui.GetWindowPos().X, pos.Y));
-        else
-            ImGui.SetNextWindowPos(pos, ImGuiCond.Always, pivot);
-
+        ImGui.SetNextWindowPos(pos, ImGuiCond.Always, pivot);
         return true;
     }
 
-    public static void RefineFollowVanillaPositionInFrame()
+    public static void RefineFollowNativePositionInFrame()
     {
-        if (!FollowVanillaDtrMode.IsActive || !DtrVanillaBounds.TryGet(out var bounds, useScreenCoordinates: true))
+        if (!FollowNativeDtrMode.AppliesTo(OverlayStyleContext.Group) || !DtrVanillaBounds.TryGet(out var bounds))
             return;
 
         var lineHeight = DtrImGui.GetHorizontalRowLineHeight();
-        var windowY = GetFollowVanillaOverlayY(bounds, lineHeight, contentRegionMinY: 0f);
+        var windowY = GetFollowNativeOverlayY(bounds, lineHeight);
         var windowSize = ImGui.GetWindowSize();
-        var xOffset = C.FollowVanillaHorizontalOffset;
+        var xOffset = C.FollowNativeHorizontalOffset;
 
-        var pos = C.FollowVanillaDtrSide == FollowVanillaDtrSide.Left
+        var pos = C.FollowNativeDtrSide == FollowNativeDtrSide.Left
             ? new Vector2(bounds.ScreenLeft - windowSize.X + xOffset, windowY)
             : new Vector2(bounds.BarScreenRight + xOffset, windowY);
 
@@ -57,7 +53,7 @@ internal static class OverlayPositioning
         ImGui.SetCursorPos(Vector2.Zero);
     }
 
-    private static bool TryGetFollowVanillaWindowPos(out Vector2 pos, out Vector2 pivot)
+    private static bool TryGetFollowNativeWindowPos(out Vector2 pos, out Vector2 pivot)
     {
         pos = default;
         pivot = Vector2.Zero;
@@ -65,9 +61,9 @@ internal static class OverlayPositioning
         if (!DtrVanillaBounds.TryGet(out var bounds))
             return false;
 
-        var overlayY = GetFollowVanillaOverlayY(bounds, FollowVanillaFontScale.EstimateLineHeight());
-        var xOffset = C.FollowVanillaHorizontalOffset;
-        if (C.FollowVanillaDtrSide == FollowVanillaDtrSide.Left)
+        var overlayY = GetFollowNativeOverlayY(bounds, FollowNativeFontScale.EstimateLineHeight());
+        var xOffset = C.FollowNativeHorizontalOffset;
+        if (C.FollowNativeDtrSide == FollowNativeDtrSide.Left)
         {
             pos = new Vector2(bounds.ScreenLeft + xOffset, overlayY);
             pivot = new Vector2(1f, 0f);
@@ -81,11 +77,8 @@ internal static class OverlayPositioning
         return true;
     }
 
-    private static float GetFollowVanillaOverlayY(
-        VanillaDtrBounds bounds,
-        float overlayLineHeight,
-        float contentRegionMinY = 0f) =>
-        bounds.GetOverlayWindowY(overlayLineHeight, contentRegionMinY) + C.FollowVanillaVerticalOffset;
+    private static float GetFollowNativeOverlayY(VanillaDtrBounds bounds, float overlayLineHeight) =>
+        bounds.GetOverlayWindowY(overlayLineHeight) + C.FollowNativeVerticalOffset;
 
     public static void ApplyDragDelta(DtrOverlayGroup group, Vector2 delta)
     {
@@ -99,7 +92,7 @@ internal static class OverlayPositioning
         else
             group.OverlayPosition.Y += delta.Y;
 
-        EzConfig.Save();
+        C.Save();
     }
 
     public static void OnOriginChanged(
@@ -125,6 +118,6 @@ internal static class OverlayPositioning
             lastWindowWidth,
             lastWindowHeight);
 
-        EzConfig.Save();
+        C.Save();
     }
 }

@@ -5,33 +5,33 @@ namespace DTROverlay.UI;
 public static partial class SettingsTab
 {
     public static bool UsesGroupLayout(DtrOverlayGroup group) =>
-        !C.FollowVanillaDtr
-        && (group.Kind == DtrOverlayGroupKind.Custom
-            || DtrOverlayGroups.IsDefaultGroup(group)
-            || (DtrOverlayGroups.IsNativeGroup(group) && DtrOverlayGroups.IsSplitNativeMode()));
+        group.Kind == DtrOverlayGroupKind.Custom
+        || (!C.FollowNativeDtr
+            && (DtrOverlayGroups.IsDefaultOverlay(group)
+                || (DtrOverlayGroups.IsNativeOverlay(group) && DtrOverlayGroups.IsSplitNativeMode())));
 
     /// <summary>
     /// Native group server-info settings on the group details panel (Native row, or Default when merged).
-    /// Hidden for Default while <see cref="Configuration.FollowVanillaDtr"/> is on — vanilla DTR is used instead.
+    /// Hidden for Default while <see cref="Configuration.FollowNativeDtr"/> is on — vanilla DTR is used instead.
     /// </summary>
     public static bool ShouldShowNativeGroupSettings(DtrOverlayGroup panelGroup)
     {
-        if (C.FollowVanillaDtr && DtrOverlayGroups.IsDefaultGroup(panelGroup))
+        if (C.FollowNativeDtr && DtrOverlayGroups.IsDefaultOverlay(panelGroup))
             return false;
 
-        return DtrOverlayGroups.IsNativeGroup(panelGroup)
-            || (DtrOverlayGroups.IsDefaultGroup(panelGroup) && !DtrOverlayGroups.IsSplitNativeMode());
+        return DtrOverlayGroups.IsNativeOverlay(panelGroup)
+            || (DtrOverlayGroups.IsDefaultOverlay(panelGroup) && !DtrOverlayGroups.IsSplitNativeMode());
     }
 
     public static bool ShouldShowGroupSeparatorSettings(DtrOverlayGroup group)
     {
-        if (C.FollowVanillaDtr)
-            return DtrOverlayGroups.IsDefaultGroup(group);
+        if (C.FollowNativeDtr)
+            return DtrOverlayGroups.IsDefaultOverlay(group) || group.Kind == DtrOverlayGroupKind.Custom;
 
-        if (DtrOverlayGroups.IsNativeGroup(group))
+        if (DtrOverlayGroups.IsNativeOverlay(group))
             return true;
 
-        if (DtrOverlayGroups.IsDefaultGroup(group))
+        if (DtrOverlayGroups.IsDefaultOverlay(group))
             return true;
 
         return group.Kind == DtrOverlayGroupKind.Custom;
@@ -39,102 +39,76 @@ public static partial class SettingsTab
 
     public static void DrawGroupSeparatorSettings(DtrOverlayGroup group)
     {
-        DtrImGui.SectionHeader("Separators");
+        MirageUi.SubHeader("Separator", pushDown: false);
 
-        if (!DtrOverlayGroups.IsNativeGroup(group))
+        if (!DtrOverlayGroups.IsNativeOverlay(group))
         {
-            if (ImGui.Checkbox("Show plugin separator bars", ref group.ShowPluginEntrySeparators))
-                EzConfig.Save();
+            if (MirageUi.Checkbox("Show plugin separator bars", ref group.ShowPluginEntrySeparators))
+                C.Save();
 
             if (ShouldShowDivisionSeparatorCheckbox(group))
                 DrawDivisionSeparatorCheckbox(group);
         }
 
-        if (C.FollowVanillaDtr && DtrOverlayGroups.IsDefaultGroup(group))
+        if (C.FollowNativeDtr && DtrOverlayGroups.IsDefaultOverlay(group))
             return;
 
         var showNativeSeparators = ShouldShowNativeGroupSettings(group)
-            && (DtrOverlayGroups.IsNativeGroup(group)
-                || (DtrOverlayGroups.IsDefaultGroup(group) && !DtrOverlayGroups.IsSplitNativeMode()));
+            && (DtrOverlayGroups.IsNativeOverlay(group)
+                || (DtrOverlayGroups.IsDefaultOverlay(group) && !DtrOverlayGroups.IsSplitNativeMode()));
 
-        if (showNativeSeparators)
-        {
-            var native = DtrOverlayGroups.IsNativeGroup(group) ? group : DtrOverlayGroups.GetNativeGroup();
-            if (ImGui.Checkbox("Show native separator bars", ref native.ShowNativeEntrySeparators))
-                EzConfig.Save();
+        if (!showNativeSeparators)
+            return;
 
-            if (!DtrOverlayGroups.IsNativeGroup(group) && ImGui.IsItemHovered())
-                ImGui.SetTooltip("Stored on the Native group.");
-        }
+        var native = DtrOverlayGroups.IsNativeOverlay(group) ? group : DtrOverlayGroups.GetNativeOverlay();
+        if (MirageUi.Checkbox("Show native separator bars", ref native.ShowNativeEntrySeparators))
+            C.Save();
+
+        if (!DtrOverlayGroups.IsNativeOverlay(group))
+            MirageUi.Tooltip("Stored on the Native overlay.");
     }
 
     public static void DrawGroupLayoutSection(DtrOverlayGroup group)
     {
-        DtrImGui.SectionHeader("Layout");
+        MirageUi.SubHeader("Layout");
         DrawGroupLayoutContent(group);
     }
 
     private static void DrawGroupLayoutContent(DtrOverlayGroup group)
     {
-        ImGuiSettingControls.LabeledIndented("Line direction :", () =>
+        var layoutMode = group.LayoutMode;
+        if (DrawEnumDropdown("Line direction", ref layoutMode, LayoutModeLabels, $"layoutMode_{group.Id}"))
         {
-            var layoutMode = (int)group.LayoutMode;
-            ImGuiSettingControls.RadioPair(
-                "Horizontal",
-                "Vertical",
-                ref layoutMode,
-                (int)OverlayLayoutMode.Horizontal,
-                (int)OverlayLayoutMode.Vertical);
+            group.LayoutMode = layoutMode;
+            C.Save();
+        }
 
-            var newMode = (OverlayLayoutMode)layoutMode;
-            if (group.LayoutMode != newMode)
-            {
-                group.LayoutMode = newMode;
-                EzConfig.Save();
-            }
-        });
-
-        if (!DtrOverlayGroups.IsNativeGroup(group))
+        if (!DtrOverlayGroups.IsNativeOverlay(group))
             DrawPluginFlowSettings(group);
     }
 
-    private static void DrawFollowVanillaLayoutSettings()
+    private static void DrawFollowNativeLayoutSettings()
     {
-        ImGuiSettingControls.LabeledIndented("Overlay relative position :", () =>
+        var side = C.FollowNativeDtrSide;
+        if (DrawEnumDropdown("Overlay relative position", ref side, FollowVanillaSideLabels, "followVanillaSide"))
         {
-            var side = (int)C.FollowVanillaDtrSide;
-            ImGuiSettingControls.RadioPair(
-                "Left side",
-                "Right side",
-                ref side,
-                (int)FollowVanillaDtrSide.Left,
-                (int)FollowVanillaDtrSide.Right);
-            var newSide = (FollowVanillaDtrSide)side;
-            if (C.FollowVanillaDtrSide != newSide)
-            {
-                C.FollowVanillaDtrSide = newSide;
-                EzConfig.Save();
-            }
+            C.FollowNativeDtrSide = side;
+            C.Save();
+        }
 
-            ImGui.SetNextItemWidth(88f);
-            if (ImGui.DragFloat("X Offset##followVanilla", ref C.FollowVanillaHorizontalOffset, 0.1f, -100f, 100f, "%.1f")
-                && ImGui.IsItemDeactivatedAfterEdit())
-                EzConfig.Save();
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(88f);
-            if (ImGui.DragFloat("Y Offset##followVanilla", ref C.FollowVanillaVerticalOffset, 0.1f, -30f, 30f, "%.1f")
-                && ImGui.IsItemDeactivatedAfterEdit())
-                EzConfig.Save();
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(88f);
-            ImGuiSettingControls.DrawOverlayFontScaleDrag("Font Size Scale##followVanilla", ref C.FollowVanillaFontSizeScale);
-        });
+        if (MirageUi.SliderFloat("X Offset", ref C.FollowNativeHorizontalOffset, -100f, 100f, "%.1f", "followVanillaX"))
+            C.Save();
+
+        if (MirageUi.SliderFloat("Y Offset", ref C.FollowNativeVerticalOffset, -30f, 30f, "%.1f", "followVanillaY"))
+            C.Save();
+
+        DrawOverlayFontScale("Font Size Scale", ref C.FollowNativeFontSizeScale, "followVanillaFontScale");
     }
 
     private static void DrawDivisionSeparatorCheckbox(DtrOverlayGroup group)
     {
-        if (ImGui.Checkbox("Show division separator", ref group.ShowDivisionSeparatorBar))
-            EzConfig.Save();
+        if (MirageUi.Checkbox("Show division separator", ref group.ShowDivisionSeparatorBar))
+            C.Save();
     }
 
     private static void DrawPluginFlowSettings(DtrOverlayGroup group)
@@ -147,61 +121,28 @@ public static partial class SettingsTab
 
     private static void DrawHorizontalPluginFlow(DtrOverlayGroup group)
     {
-        ImGuiSettingControls.LabeledIndented("Plugin order :", () =>
-        {
-            var flow = (int)group.HorizontalPluginFlow;
-            ImGuiSettingControls.RadioPair(
-                "Left to right",
-                "Right to left",
-                ref flow,
-                (int)OverlayHorizontalFlow.LeftToRight,
-                (int)OverlayHorizontalFlow.RightToLeft);
+        var flow = group.HorizontalPluginFlow;
+        if (!DrawEnumDropdown("Plugin order", ref flow, HorizontalFlowLabels, $"hFlow_{group.Id}"))
+            return;
 
-            var newFlow = (OverlayHorizontalFlow)flow;
-            if (group.HorizontalPluginFlow != newFlow)
-            {
-                group.HorizontalPluginFlow = newFlow;
-                EzConfig.Save();
-            }
-        });
+        group.HorizontalPluginFlow = flow;
+        C.Save();
     }
 
     private static void DrawVerticalPluginFlow(DtrOverlayGroup group)
     {
-        ImGuiSettingControls.LabeledIndented("Plugin order :", () =>
+        var verticalFlow = group.VerticalPluginFlow;
+        if (DrawEnumDropdown("Plugin order", ref verticalFlow, VerticalFlowLabels, $"vFlow_{group.Id}"))
         {
-            var verticalFlow = (int)group.VerticalPluginFlow;
-            ImGuiSettingControls.RadioPair(
-                "Top to bottom",
-                "Bottom to top",
-                ref verticalFlow,
-                (int)OverlayVerticalFlow.TopToBottom,
-                (int)OverlayVerticalFlow.BottomToTop);
+            group.VerticalPluginFlow = verticalFlow;
+            C.Save();
+        }
 
-            var newVerticalFlow = (OverlayVerticalFlow)verticalFlow;
-            if (group.VerticalPluginFlow != newVerticalFlow)
-            {
-                group.VerticalPluginFlow = newVerticalFlow;
-                EzConfig.Save();
-            }
-        });
+        var alignment = group.VerticalAlignment;
+        if (!DrawEnumDropdown("Plugin alignment", ref alignment, VerticalAlignmentLabels, $"vAlign_{group.Id}"))
+            return;
 
-        ImGuiSettingControls.LabeledIndented("Plugin alignment :", () =>
-        {
-            var alignment = (int)group.VerticalAlignment;
-            ImGuiSettingControls.RadioPair(
-                "Left align",
-                "Right align",
-                ref alignment,
-                (int)OverlayVerticalAlignment.Left,
-                (int)OverlayVerticalAlignment.Right);
-
-            var newAlignment = (OverlayVerticalAlignment)alignment;
-            if (group.VerticalAlignment != newAlignment)
-            {
-                group.VerticalAlignment = newAlignment;
-                EzConfig.Save();
-            }
-        });
+        group.VerticalAlignment = alignment;
+        C.Save();
     }
 }

@@ -3,7 +3,7 @@ namespace DTROverlay.Services;
 internal static class OverlayGroupLayout
 {
     public static DtrOverlayGroup Resolve(DtrOverlayGroup group = null) =>
-        group ?? OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultGroup();
+        group ?? OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultOverlay();
 
     public static OverlayLayoutMode GetLayoutMode(DtrOverlayGroup group = null) =>
         Resolve(group).LayoutMode;
@@ -20,14 +20,14 @@ internal static class OverlayGroupLayout
     public static bool UsesNativePluginDivisionSettings(DtrOverlayGroup group = null)
     {
         var resolved = Resolve(group);
-        return DtrOverlayGroups.IsDefaultGroup(resolved) && !DtrOverlayGroups.IsSplitNativeMode();
+        return DtrOverlayGroups.IsDefaultOverlay(resolved) && !DtrOverlayGroups.IsSplitNativeMode();
     }
 
     public static bool ShouldInsertDivisionSeparator(bool hasNativeOverlayEntries, bool hasPluginOverlayEntries) =>
         UsesNativePluginDivisionSettings()
         && GetLayoutMode() == OverlayLayoutMode.Horizontal
         && hasPluginOverlayEntries
-        && (hasNativeOverlayEntries || FollowVanillaDtrMode.IsActive);
+        && (hasNativeOverlayEntries || FollowNativeDtrMode.IsActive);
 
     public static void CopyLayoutFrom(DtrOverlayGroup target, DtrOverlayGroup source)
     {

@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.0.0.0] — 2026-09-25
+
+### Added
+
+- Overlay editor as the main window. Settings open from the gear icon.
+- Overlays can be added while Follow native DTR is on. Only Default follows the game bar.
+- Plugin page link in the title bar.
+
+### Changed
+
+- Follow Vanilla DTR is now **Follow native DTR**, chosen against **Manual** on the Mode page.
+- Split Native DTR is a Manual option.
+- Settings are split into Mode, Default Style, and Options.
+- Groups are named overlays in the UI.
+- Saved configs are converted to config version 2.
+- Plugin icon updated.
+
+### Fixed
+
+- Follow native DTR (left) left a gap beside short world names, in instances, and across the home/travel icon.
+
+### Removed
+
+- Reset order for DTR entries.
+
 ## 1.2.0.5 — 2026-06-02
 
 ### 変更
@@ -96,3 +121,5 @@
 - プラグインエントリの順序・表示・prefix/suffix・Min Width・色
 - ネイティブグループ（ワールド・接続・時計）の表示とスタイル
 - 設定 UI（General / Settings）、ショートカット（バニラ DTR / Dalamud DTR 一括無効化）
+
+[2.0.0.0]: https://github.com/exatrines/DTROverlay/compare/v1.2.0.5...v2.0.0.0

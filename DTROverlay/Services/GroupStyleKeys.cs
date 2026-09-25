@@ -73,7 +73,7 @@ internal static class GroupStyleKeys
     /// <summary>Resolves plugin row style key for the active or given group.</summary>
     public static string ResolvePluginEntryKey(string pluginTitle, DtrOverlayGroup group = null)
     {
-        var resolvedGroup = group ?? OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultGroup();
+        var resolvedGroup = group ?? OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultOverlay();
         return PluginEntry(resolvedGroup.Id, pluginTitle);
     }
 

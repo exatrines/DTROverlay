@@ -1,16 +1,22 @@
 namespace DTROverlay;
 
+using System.IO;
+using System.Text;
 using DTROverlay.UI;
+using MirageUI.Theme;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 public sealed class Configuration
 {
+    public int ConfigVersion = ConfigV2Migrator.CurrentVersion;
     public bool OverlayEnabled = true;
-    public bool FollowVanillaDtr;
+    public bool FollowNativeDtr;
     public bool SplitNativeDtr = true;
-    public FollowVanillaDtrSide FollowVanillaDtrSide = FollowVanillaDtrSide.Left;
-    public float FollowVanillaHorizontalOffset;
-    public float FollowVanillaVerticalOffset = DtrStyle.DefaultFollowVanillaVerticalOffset;
-    public float FollowVanillaFontSizeScale = DtrStyle.DefaultFollowVanillaFontSizeScale;
+    public FollowNativeDtrSide FollowNativeDtrSide = FollowNativeDtrSide.Left;
+    public float FollowNativeHorizontalOffset;
+    public float FollowNativeVerticalOffset = DtrStyle.DefaultFollowNativeVerticalOffset;
+    public float FollowNativeFontSizeScale = DtrStyle.DefaultFollowNativeFontSizeScale;
     public Vector2 OverlayPosition = new(20f, 10f);
     public OverlayPositionOrigin OverlayPositionOrigin = OverlayPositionOrigin.TopRight;
     public bool OverlayPositionOriginMigrated;
@@ -83,9 +89,9 @@ public sealed class Configuration
     public Dictionary<string, bool> FixedWidthShadowEnabled = [];
     public List<string> EntryOrder = [];
 
-    public List<DtrOverlayGroup> OverlayGroups = [];
+    public List<DtrOverlayGroup> Overlays = [];
 
-    public string SelectedOverlayGroupId = "";
+    public string SelectedOverlayId = "";
 
     public bool OverlayGroupsMigrated;
 
@@ -97,4 +103,58 @@ public sealed class Configuration
     public bool GroupLayoutMigrated;
 
     public bool GroupScopedSettingsMigrated;
+
+    public MirageColorSettings ThemeColors;
+
+    private const string FileName = "DefaultConfig.json";
+
+    private static readonly JsonSerializerSettings LoadSettings = new()
+    {
+        ObjectCreationHandling = ObjectCreationHandling.Replace,
+    };
+
+    private static readonly JsonSerializerSettings SaveSettings = new()
+    {
+        Formatting = Formatting.Indented,
+        DefaultValueHandling = DefaultValueHandling.Include,
+    };
+
+    private static readonly Encoding Utf8 = Encoding.UTF8;
+
+    private IDalamudPluginInterface _pluginInterface;
+
+    public static Configuration Load(IDalamudPluginInterface pluginInterface)
+    {
+        var path = Path.Combine(pluginInterface.GetPluginConfigDirectory(), FileName);
+        string json = null;
+        if (File.Exists(path))
+            json = File.ReadAllText(path, Encoding.UTF8);
+        else if (pluginInterface.ConfigFile.Exists)
+            json = File.ReadAllText(pluginInterface.ConfigFile.FullName, Encoding.UTF8);
+
+        Configuration config = null;
+        if (json != null)
+        {
+            var root = JObject.Parse(json);
+            ConfigV2Migrator.Apply(root);
+            config = root.ToObject<Configuration>(JsonSerializer.Create(LoadSettings));
+        }
+        config ??= new Configuration();
+        config._pluginInterface = pluginInterface;
+        return config;
+    }
+
+    public void Save()
+    {
+        if (_pluginInterface == null)
+            return;
+
+        var dir = _pluginInterface.GetPluginConfigDirectory();
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, FileName);
+        var json = JsonConvert.SerializeObject(this, SaveSettings);
+        var tempPath = path + ".new";
+        File.WriteAllText(tempPath, json, Utf8);
+        File.Move(tempPath, path, overwrite: true);
+    }
 }

@@ -6,7 +6,7 @@ public sealed class DtrOverlayGroup
 {
     public string Id = Guid.NewGuid().ToString("N");
 
-    public string Name = "Group 1";
+    public string Name = "Overlay 1";
 
     public DtrOverlayGroupKind Kind = DtrOverlayGroupKind.Custom;
 

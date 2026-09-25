@@ -8,10 +8,10 @@ public static class DtrOverlayCollector
 {
     public static DtrOverlayContent Collect(DtrOverlayGroup group)
     {
-        if (!Svc.ClientState.IsLoggedIn)
+        if (!PluginServices.ClientState.IsLoggedIn)
             return new([], [], []);
 
-        if (DtrOverlayGroups.IsNativeGroup(group))
+        if (DtrOverlayGroups.IsNativeOverlay(group))
         {
             if (!DtrOverlayGroups.IsSplitNativeMode())
                 return new([], [], []);
@@ -19,12 +19,12 @@ public static class DtrOverlayCollector
             return CollectNativeGroup();
         }
 
-        DtrOverlayGroups.SyncGroupOrder(group);
+        DtrOverlayGroups.SyncOverlayOrder(group);
 
-        if (FollowVanillaDtrMode.IsActive)
+        if (FollowNativeDtrMode.AppliesTo(group))
             return CollectFollowVanilla(group);
 
-        if (DtrOverlayGroups.IsDefaultGroup(group) && !DtrOverlayGroups.IsSplitNativeMode())
+        if (DtrOverlayGroups.IsDefaultOverlay(group) && !DtrOverlayGroups.IsSplitNativeMode())
             return CollectMergedDefault(group);
 
         return CollectPluginsOnly(group);

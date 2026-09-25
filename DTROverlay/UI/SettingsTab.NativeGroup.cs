@@ -7,56 +7,49 @@ public static partial class SettingsTab
 {
     private static void DrawPositionSection(DtrOverlayGroup group)
     {
-        DtrImGui.SectionHeader("Position");
+        MirageUi.SubHeader("Position");
 
-        if (ImGui.Checkbox("Edit mode", ref group.OverlayEditMode))
+        if (MirageUi.Checkbox("Edit mode", ref group.OverlayEditMode))
         {
             if (group.OverlayEditMode)
             {
-                foreach (var other in C.OverlayGroups)
+                foreach (var other in C.Overlays)
                 {
                     if (other.Id != group.Id)
                         other.OverlayEditMode = false;
                 }
             }
 
-            EzConfig.Save();
+            C.Save();
         }
 
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Drag the overlay in-game while enabled.");
+        MirageUi.Tooltip("Drag the overlay in-game while enabled.");
 
         DrawOverlayPositionOriginSettings(group);
 
-        ImGuiSettingControls.LabeledIndented("Position on screen :", () =>
-        {
-            var viewport = ImGuiHelpers.MainViewport;
-            var maxX = MathF.Max(0f, viewport.Size.X);
-            var maxY = MathF.Max(0f, viewport.Size.Y);
+        var viewport = ImGuiHelpers.MainViewport;
+        var maxX = MathF.Max(0f, viewport.Size.X);
+        var maxY = MathF.Max(0f, viewport.Size.Y);
 
-            ImGui.SetNextItemWidth(100f);
-            if (ImGui.DragFloat("X##overlayPos", ref group.OverlayPosition.X, 1f, 0f, maxX, "%.0f"))
-                EzConfig.Save();
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(100f);
-            if (ImGui.DragFloat("Y##overlayPos", ref group.OverlayPosition.Y, 1f, 0f, maxY, "%.0f"))
-                EzConfig.Save();
-        });
+        if (MirageUi.SliderFloat("X", ref group.OverlayPosition.X, 0f, maxX, "%.0f", $"overlayPosX_{group.Id}"))
+            C.Save();
+
+        if (MirageUi.SliderFloat("Y", ref group.OverlayPosition.Y, 0f, maxY, "%.0f", $"overlayPosY_{group.Id}"))
+            C.Save();
     }
 
     private static DtrOverlayGroup GetServerInfoSettingsGroup(DtrOverlayGroup panelGroup) =>
-        DtrOverlayGroups.IsDefaultGroup(panelGroup) && !DtrOverlayGroups.IsSplitNativeMode()
-            ? DtrOverlayGroups.GetNativeGroup()
+        DtrOverlayGroups.IsDefaultOverlay(panelGroup) && !DtrOverlayGroups.IsSplitNativeMode()
+            ? DtrOverlayGroups.GetNativeOverlay()
             : panelGroup;
 
     private static void DrawServerInfoSection(DtrOverlayGroup panelGroup)
     {
         var group = GetServerInfoSettingsGroup(panelGroup);
 
-        DtrImGui.SectionHeader("Native Group");
-
-        if (panelGroup.Id != group.Id && ImGui.IsItemHovered())
-            ImGui.SetTooltip("Server info is stored on the Native group.");
+        MirageUi.SubHeader("Native Overlay");
+        if (panelGroup.Id != group.Id)
+            MirageUi.Tooltip("Server info is stored on the Native overlay.");
 
         DrawServerInfoDisplayModeSettings(group);
         DrawServerInfoPartSettings(group);
@@ -64,70 +57,52 @@ public static partial class SettingsTab
 
     private static void DrawServerInfoDisplayModeSettings(DtrOverlayGroup group)
     {
-        ImGuiSettingControls.LabeledIndented("Mode :", () =>
-        {
-            var displayMode = (int)group.ServerInfoDisplayMode;
-            ImGuiSettingControls.RadioPair(
-                "Icon mode",
-                "Text mode",
-                ref displayMode,
-                (int)ServerInfoDisplayMode.Icon,
-                (int)ServerInfoDisplayMode.Text);
+        var displayMode = group.ServerInfoDisplayMode;
+        if (!DrawEnumDropdown("Mode", ref displayMode, ServerInfoModeLabels, $"serverInfoMode_{group.Id}"))
+            return;
 
-            var newMode = (ServerInfoDisplayMode)displayMode;
-            if (group.ServerInfoDisplayMode != newMode)
-            {
-                group.ServerInfoDisplayMode = newMode;
-                EzConfig.Save();
-            }
-        });
+        group.ServerInfoDisplayMode = displayMode;
+        C.Save();
     }
 
     private static void DrawServerInfoPartSettings(DtrOverlayGroup group)
     {
-        ImGui.TextUnformatted("Enable display parts :");
+        MirageUi.Text("Enable display parts", MirageUi.Color.Secondary);
 
-        ImGuiSettingControls.Indented(() =>
+        foreach (var partId in OverlayEntryIds.ServerInfoParts)
         {
-            foreach (var partId in OverlayEntryIds.ServerInfoParts)
-            {
-                var visible = !group.HiddenServerInfoParts.Contains(partId);
+            var visible = !group.HiddenServerInfoParts.Contains(partId);
+            if (!MirageUi.Checkbox(OverlayEntryIds.GetPartDisplayName(partId), ref visible))
+                continue;
 
-                if (ImGui.Checkbox(OverlayEntryIds.GetPartDisplayName(partId), ref visible))
-                {
-                    if (visible)
-                        group.HiddenServerInfoParts.Remove(partId);
-                    else
-                        group.HiddenServerInfoParts.Add(partId);
+            if (visible)
+                group.HiddenServerInfoParts.Remove(partId);
+            else
+                group.HiddenServerInfoParts.Add(partId);
 
-                    EzConfig.Save();
-                }
-            }
-        });
+            C.Save();
+        }
     }
 
     private static void DrawOverlayPositionOriginSettings(DtrOverlayGroup group)
     {
         var previousOrigin = group.OverlayPositionOrigin;
+        var origin = group.OverlayPositionOrigin;
+        if (DrawEnumDropdown("Overlay origin", ref origin, OverlayOriginLabels, $"overlayOrigin_{group.Id}"))
+            group.OverlayPositionOrigin = origin;
 
-        ImGuiSettingControls.LabeledIndented("Overlay origin :", () =>
-            ImGuiSettingControls.DrawOverlayOriginRadios(ref group.OverlayPositionOrigin));
+        MirageUi.Tooltip(
+            "Top origins: X/Y offset from the top edge. "
+            + "Bottom origins: X/Y offset from the bottom edge.");
 
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip(
-                "Top origins: X/Y offset from the top edge. "
-                + "Bottom origins: X/Y offset from the bottom edge.");
-        }
+        if (group.OverlayPositionOrigin == previousOrigin)
+            return;
 
-        if (group.OverlayPositionOrigin != previousOrigin)
-        {
-            OverlayPositioning.OnOriginChanged(
-                group,
-                previousOrigin,
-                OverlayWindow.GetLastWidthForGroup(group.Id),
-                OverlayWindow.GetLastHeightForGroup(group.Id));
-            EzConfig.Save();
-        }
+        OverlayPositioning.OnOriginChanged(
+            group,
+            previousOrigin,
+            OverlayWindow.GetLastWidthForGroup(group.Id),
+            OverlayWindow.GetLastHeightForGroup(group.Id));
+        C.Save();
     }
 }

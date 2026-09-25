@@ -1,6 +1,6 @@
 namespace DTROverlay;
 
-public enum FollowVanillaDtrSide
+public enum FollowNativeDtrSide
 {
     /// <summary>Plugin overlay sits to the left of the vanilla DTR bar.</summary>
     Left,

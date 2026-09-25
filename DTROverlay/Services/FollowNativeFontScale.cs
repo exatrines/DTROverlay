@@ -3,7 +3,7 @@ using DTROverlay.UI;
 
 namespace DTROverlay.Services;
 
-internal static class FollowVanillaFontScale
+internal static class FollowNativeFontScale
 {
     private const float MinScale = 0.5f;
     private const float MaxScale = 3f;
@@ -19,7 +19,7 @@ internal static class FollowVanillaFontScale
     public static float ActiveScale => OverlayStyleResolver.GetEffectiveOverlayFontScale();
 
     public static float GetVanillaPluginScale() =>
-        Math.Clamp(_cachedVanillaMatchScale * C.FollowVanillaFontSizeScale, MinScale, MaxScale);
+        Math.Clamp(_cachedVanillaMatchScale * C.FollowNativeFontSizeScale, MinScale, MaxScale);
 
     public static float NativeRowHeight => _cachedNativeRowHeight;
 
