@@ -5,22 +5,22 @@ internal static class OverlayStyleKeys
 {
     public static string GetNativeTextColorLayoutKey() =>
         DtrOverlayGroups.IsMergedDefaultMode()
-            ? GroupStyleKeys.OverrideNativeText(DtrOverlayGroups.GetDefaultGroup().Id)
-            : GroupStyleKeys.OverrideText(DtrOverlayGroups.GetNativeGroup().Id);
+            ? GroupStyleKeys.OverrideNativeText(DtrOverlayGroups.GetDefaultOverlay().Id)
+            : GroupStyleKeys.OverrideText(DtrOverlayGroups.GetNativeOverlay().Id);
 
     public static string GetDivisionSeparatorLayoutKey(DtrOverlayGroup group)
     {
-        if (C.FollowVanillaDtr && DtrOverlayGroups.IsDefaultGroup(group))
+        if (C.FollowNativeDtr && DtrOverlayGroups.IsDefaultOverlay(group))
             return OverlayEntryIds.DivisionSeparatorColor;
 
-        if (DtrOverlayGroups.IsMergedDefaultPanelGroup(group))
+        if (DtrOverlayGroups.IsMergedDefaultPanelOverlay(group))
             return GroupStyleKeys.OverrideDivisionSeparator(group.Id);
 
         return OverlayEntryIds.DivisionSeparatorColor;
     }
 
     public static bool IsDefaultStyleDivisionColorRowEnabled(DtrOverlayGroup group) =>
-        C.FollowVanillaDtr
+        C.FollowNativeDtr
         || (group.LayoutMode == OverlayLayoutMode.Horizontal && group.ShowDivisionSeparatorBar);
 
     public static bool IsOverrideStyleDivisionColorRowEnabled(DtrOverlayGroup group) =>

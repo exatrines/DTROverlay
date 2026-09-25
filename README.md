@@ -1,50 +1,45 @@
 # DTR Overlay
 
-<div align="center">
-<img src="https://raw.githubusercontent.com/exatrines/DalamudPlugins/refs/heads/main/assets/images/DTROverlayIcon.png" width="300px">
-</div>
+[日本語](docs/README.ja.md)
 
-FF14 Dalamud plugin that replaces the Server Info Bar with a customizable ImGui overlay.
+DTR Overlay is a Dalamud plugin that draws your own Server Info Bar overlays.
 
-## Plugin Repository URL
+The main window is the overlay editor: add overlays, choose which plugin entries they show, and set order and placement. Settings, opened from the gear icon, cover Follow native DTR, default style, and shortcuts. In Follow native DTR, the Default overlay sits beside the game bar. Other overlays keep their own layout.
+
+## Install
+
+1. Run `/xlsettings` and open the **Experimental** tab
+2. Add this URL under **Custom Plugin Repositories**:
 
 ```
 https://raw.githubusercontent.com/exatrines/DalamudPlugins/refs/heads/main/pluginmaster.json
 ```
 
-## In-game
+3. Run `/xlplugins` and install **DTR Overlay**
 
-- `/dtroverlay` — toggle settings UI
-- `/dtroverlay on|off|toggle` — enable or disable overlay
+## Features
 
-**Settings tab highlights**
+- **Overlays** — add overlays, name them, and turn each one on or off
+- **Follow native DTR** — sit the Default overlay beside the game bar, or place overlays yourself in Manual
+- **Split Native DTR** — in Manual, show server info on its own overlay
+- **DTR entries** — order, visibility, prefix and suffix, minimum width, and colors per plugin
+- **Style** — default text, separators, and tooltips, with per-overlay overrides
+- **Shortcuts** — hide the game bar or Dalamud’s own DTR entries, and open a plugin UI with a middle-click
 
-- Layout: Horizontal / Vertical, Follow Vanilla DTR, plugin order, native/plugin division
-- Appearance: font scale, colors, separators
-- Plugin entries: order, visibility, prefix/suffix, min width, per-entry colors
+## Commands
 
-See [spec.md](./spec.md) for behavior details.
+| Command | Description |
+| --- | --- |
+| `/dtroverlay` | Toggle the overlay editor |
 
-## Build
+## For developers
 
-```bash
-git submodule update --init --recursive
-dotnet build DTROverlay.sln -c Release
-```
+1. Build: `dotnet build DTROverlay.sln -c Release -p:Platform=x64`
+2. Point Dalamud’s **dev plugin** path at `DTROverlay/bin/Release/`
+3. Enable **DTR Overlay** in the plugin installer (dev)
 
-## Release (maintainers)
-
-```bash
-bash .github/scripts/bump-version.sh 1.0.0.0
-git add DTROverlay/DTROverlay.json DTROverlay/DTROverlay.csproj CHANGELOG.md
-git commit -m "Release 1.0.0.0"
-git tag v1.0.0.0
-git push origin main
-git push origin v1.0.0.0
-```
-
-Pushing a `v*` tag (or running the Release workflow manually) builds `DTROverlay.zip` and publishes a GitHub Release.
+[MirageUI](https://github.com/exatrines/MirageUI) is included as a git submodule for the shared UI kit.
 
 ## License
 
-AGPL-3.0-or-later
+[AGPL-3.0-or-later](LICENSE)

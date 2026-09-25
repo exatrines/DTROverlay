@@ -11,8 +11,8 @@ public static partial class DtrImGui
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, Vector2.Zero);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
-        if (FollowVanillaDtrMode.IsActive && DtrVanillaBounds.TryGet(out var bounds, useScreenCoordinates: true))
-            FollowVanillaFontScale.UpdateFromBounds(bounds);
+        if (FollowNativeDtrMode.IsActive && DtrVanillaBounds.TryGet(out var bounds))
+            FollowNativeFontScale.UpdateFromBounds(bounds);
 
         var fontPush = DtrOverlayFonts.PushActive();
 
@@ -34,9 +34,9 @@ public static partial class DtrImGui
     {
         get
         {
-            if (FollowVanillaDtrMode.IsActive)
+            if (FollowNativeDtrMode.AppliesTo(OverlayStyleContext.Group))
             {
-                var rowHeight = FollowVanillaFontScale.NativeRowHeight;
+                var rowHeight = FollowNativeFontScale.NativeRowHeight;
                 if (rowHeight > 0f)
                     return rowHeight;
 

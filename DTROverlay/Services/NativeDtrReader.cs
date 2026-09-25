@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
-using ECommons.GameHelpers;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
@@ -18,7 +18,7 @@ internal static partial class NativeDtrReader
     {
         var segments = new List<VisibleDtrEntry>();
 
-        var addon = Svc.GameGui.GetAddonByName("_DTR");
+        var addon = PluginServices.GameGui.GetAddonByName("_DTR");
         if (addon == null)
             return segments;
 
@@ -123,7 +123,8 @@ internal static partial class NativeDtrReader
 
     private static unsafe string GetWorldIconTextLabel(AddonDtr* dtr)
     {
-        var character = Player.Character;
+        var localPlayer = PluginServices.ObjectTable.LocalPlayer;
+        var character = localPlayer == null ? null : (Character*)localPlayer.Address;
         if (character != null)
         {
             return character->CurrentWorld != character->HomeWorld
@@ -172,7 +173,7 @@ internal static partial class NativeDtrReader
         if (node == null || !node->IsVisible())
             return false;
 
-        text = GenericHelpers.ReadSeString(&node->NodeText).TextValue.Trim();
+        text = SeString.Parse(node->NodeText.AsSpan()).TextValue.Trim();
         return !string.IsNullOrEmpty(text);
     }
 

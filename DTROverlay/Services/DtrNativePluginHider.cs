@@ -10,14 +10,14 @@ internal static unsafe class DtrNativePluginHider
     private const uint DalamudNodeIdBase = 1000;
 
     public static void Register() =>
-        Svc.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "_DTR", OnDtrPostDraw);
+        PluginServices.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "_DTR", OnDtrPostDraw);
 
     public static void Unregister() =>
-        Svc.AddonLifecycle.UnregisterListener(AddonEvent.PostDraw, "_DTR", OnDtrPostDraw);
+        PluginServices.AddonLifecycle.UnregisterListener(AddonEvent.PostDraw, "_DTR", OnDtrPostDraw);
 
     private static void OnDtrPostDraw(AddonEvent type, AddonArgs args)
     {
-        if (!FollowVanillaDtrMode.IsActive)
+        if (!FollowNativeDtrMode.IsActive)
             return;
 
         var addon = (AtkUnitBase*)args.Addon.Address;

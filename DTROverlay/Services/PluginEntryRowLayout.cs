@@ -10,7 +10,7 @@ internal static class PluginEntryRowLayout
 {
     public static IEnumerable<VisibleDtrEntry> CollectPluginEntry(DtrOverlayGroup group, string title)
     {
-        var entry = Svc.DtrBar.Entries.FirstOrDefault(e => e.Title == title);
+        var entry = PluginServices.DtrBar.Entries.FirstOrDefault(e => e.Title == title);
         if (entry == null || !DtrEntryVisibility.ShouldShowInOverlay(entry, group) || entry.Text == null)
             yield break;
 

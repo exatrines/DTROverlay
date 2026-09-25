@@ -16,7 +16,7 @@ internal static class DtrStyle
     public const float EditModeBackgroundAlpha = 0.45f;
     public const float VerticalOffset = 1f;
     /// <summary>Default Y nudge (screen pixels) when Follow Vanilla DTR aligns the plugin row.</summary>
-    public const float DefaultFollowVanillaVerticalOffset = 2f;
+    public const float DefaultFollowNativeVerticalOffset = 2f;
     /// <summary>Scales native glyph target down so ImGui text visually matches game fonts.</summary>
     public const float FollowVanillaFontVisualMatch = 0.88f;
     /// <summary>
@@ -36,7 +36,7 @@ internal static class DtrStyle
     public const ImGuiColorEditFlags ColorEditFlags = ImGuiColorEditFlags.NoInputs;
 
     public const float DefaultOverlayFontSizeScale = 1.1f;
-    public const float DefaultFollowVanillaFontSizeScale = 1f;
+    public const float DefaultFollowNativeFontSizeScale = 1f;
 
     /// <summary>Origin palette (final fallback when Default style columns are off).</summary>
     public static readonly Vector4 OriginTextColor = new(1f, 1f, 1f, 1f);

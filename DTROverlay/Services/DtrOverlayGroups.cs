@@ -11,218 +11,216 @@ internal static class DtrOverlayGroups
 
     public static void EnsureInitialized()
     {
-        C.OverlayGroups ??= [];
+        C.Overlays ??= [];
         MigrateLegacySettings();
         OverlayEntryIds.MigrateStyleHierarchy();
         EnsureSystemGroups();
         OverlayEntryIds.MigrateMergedDefaultOverrideStyles();
         MigrateGroupLayout();
         MigrateGroupScopedSettings();
+        MigrateAutoOverlayNames();
 
-        if (string.IsNullOrEmpty(C.SelectedOverlayGroupId)
-            || GetById(C.SelectedOverlayGroupId) == null)
-            C.SelectedOverlayGroupId = GetDefaultGroup().Id;
+        if (string.IsNullOrEmpty(C.SelectedOverlayId)
+            || GetById(C.SelectedOverlayId) == null)
+            C.SelectedOverlayId = GetDefaultOverlay().Id;
 
-        if (C.FollowVanillaDtr)
-            ApplyFollowVanillaConstraints();
+        if (C.FollowNativeDtr)
+            ApplyFollowNativeConstraints();
 
         EnsureDisplayOrder();
-        SyncDefaultGroupDisplayName();
+        SyncDefaultOverlayDisplayName();
         PluginEntryAffixSettings.NormalizeAllGroups();
 
-        if (!IsSplitNativeMode() && IsNativeGroup(GetSelected()))
-            Select(GetDefaultGroup().Id);
+        if (!IsOverlayListedInSettings(GetSelected()))
+            Select(GetDefaultOverlay().Id);
 
-        foreach (var group in C.OverlayGroups)
+        foreach (var group in C.Overlays)
         {
-            if (!IsNativeGroup(group))
-                SyncGroupOrder(group);
+            if (!IsNativeOverlay(group))
+                SyncOverlayOrder(group);
         }
     }
 
-    public static DtrOverlayGroup GetDefaultGroup() =>
-        C.OverlayGroups.First(g => g.Kind == DtrOverlayGroupKind.Default);
+    public static DtrOverlayGroup GetDefaultOverlay() =>
+        C.Overlays.First(g => g.Kind == DtrOverlayGroupKind.Default);
 
-    public static DtrOverlayGroup GetNativeGroup() =>
-        C.OverlayGroups.First(g => g.Kind == DtrOverlayGroupKind.Native);
+    public static DtrOverlayGroup GetNativeOverlay() =>
+        C.Overlays.First(g => g.Kind == DtrOverlayGroupKind.Native);
 
-    public static bool IsDefaultGroup(DtrOverlayGroup group) =>
+    public static bool IsDefaultOverlay(DtrOverlayGroup group) =>
         group.Kind == DtrOverlayGroupKind.Default;
 
-    public static bool IsNativeGroup(DtrOverlayGroup group) =>
+    public static bool IsNativeOverlay(DtrOverlayGroup group) =>
         group.Kind == DtrOverlayGroupKind.Native;
 
-    public static bool IsSystemGroup(DtrOverlayGroup group) =>
+    public static bool IsSystemOverlay(DtrOverlayGroup group) =>
         group.Kind != DtrOverlayGroupKind.Custom;
 
     public static bool IsSplitNativeMode() =>
-        C.SplitNativeDtr && !C.FollowVanillaDtr;
+        C.SplitNativeDtr && !C.FollowNativeDtr;
 
     public static bool IsMergedDefaultMode() =>
-        !IsSplitNativeMode() && !C.FollowVanillaDtr;
+        !IsSplitNativeMode() && !C.FollowNativeDtr;
 
-    public static bool IsMergedDefaultPanelGroup(DtrOverlayGroup group) =>
-        IsMergedDefaultMode() && IsDefaultGroup(group);
+    public static bool IsMergedDefaultPanelOverlay(DtrOverlayGroup group) =>
+        IsMergedDefaultMode() && IsDefaultOverlay(group);
 
-    public static void SyncDefaultGroupDisplayName()
+    public static void SyncDefaultOverlayDisplayName()
     {
-        if (C.OverlayGroups == null || C.OverlayGroups.Count == 0)
+        if (C.Overlays == null || C.Overlays.Count == 0)
             return;
 
-        GetDefaultGroup().Name = IsMergedDefaultMode()
+        GetDefaultOverlay().Name = IsMergedDefaultMode()
             ? MergedDefaultGroupName
             : DefaultGroupName;
     }
 
-    /// <summary>Settings group list: Native is listed (disabled) under Follow Vanilla, hidden when merged into Default.</summary>
-    public static bool IsGroupListedInSettings(DtrOverlayGroup group)
+    /// <summary>Settings group list: Native is listed only in Split Native DTR.</summary>
+    public static bool IsOverlayListedInSettings(DtrOverlayGroup group)
     {
-        if (!IsNativeGroup(group))
+        if (!IsNativeOverlay(group))
             return true;
 
-        return C.FollowVanillaDtr || IsSplitNativeMode();
+        return IsSplitNativeMode();
     }
 
     /// <summary>Overlay windows: Native only when Split Native DTR is active.</summary>
-    public static bool IsGroupHostedAsOverlay(DtrOverlayGroup group) =>
-        !IsNativeGroup(group) || IsSplitNativeMode();
-
-    public static bool IsGroupSelectableInSettings(DtrOverlayGroup group)
-    {
-        if (C.FollowVanillaDtr)
-            return IsDefaultGroup(group);
-
-        if (IsNativeGroup(group))
-            return IsSplitNativeMode();
-
-        return true;
-    }
+    public static bool IsOverlayHosted(DtrOverlayGroup group) =>
+        !IsNativeOverlay(group) || IsSplitNativeMode();
 
     public static IEnumerable<DtrOverlayGroup> EnumerateGroupsForSettings() =>
-        C.OverlayGroups.Where(IsGroupListedInSettings);
+        C.Overlays.Where(IsOverlayListedInSettings);
 
     public static DtrOverlayGroup GetSelected() =>
-        GetById(C.SelectedOverlayGroupId) ?? GetDefaultGroup();
+        GetById(C.SelectedOverlayId) ?? GetDefaultOverlay();
 
     public static DtrOverlayGroup GetById(string groupId) =>
         string.IsNullOrEmpty(groupId)
             ? null
-            : C.OverlayGroups.FirstOrDefault(g => g.Id == groupId);
+            : C.Overlays.FirstOrDefault(g => g.Id == groupId);
 
     public static void Select(string groupId)
     {
         if (GetById(groupId) is not { } group)
             return;
 
-        if (C.FollowVanillaDtr && !IsDefaultGroup(group))
+        if (!IsOverlayListedInSettings(group))
             return;
 
-        if (!IsGroupListedInSettings(group))
-            return;
-
-        C.SelectedOverlayGroupId = groupId;
-        EzConfig.Save();
+        C.SelectedOverlayId = groupId;
+        C.Save();
     }
 
-    public static void ApplyFollowVanillaConstraints()
+    public static void ApplyFollowNativeConstraints()
     {
-        if (!ApplyFollowVanillaConstraintsCore())
+        if (!ApplyFollowNativeConstraintsCore())
             return;
 
-        EzConfig.Save();
+        C.Save();
         OverlayWindowHost.RequestRefresh();
     }
 
-    // Follow Vanilla の制約（グループ名固定・Native 選択の解除）を適用する。
+    // Follow Vanilla の制約（グループ名固定）を適用する。
     // 実際に値が変化した場合のみ true を返す。保存・再描画要求は呼び出し側に委ねるため、
     // 毎フレーム呼ばれても変化が無ければ何もしない（FPS 低下対策）。
-    internal static bool ApplyFollowVanillaConstraintsCore()
+    internal static bool ApplyFollowNativeConstraintsCore()
     {
-        if (!C.FollowVanillaDtr || C.OverlayGroups.Count == 0)
+        if (!C.FollowNativeDtr || C.Overlays.Count == 0)
             return false;
 
         var changed = false;
 
-        var def = GetDefaultGroup();
+        var def = GetDefaultOverlay();
         if (def.Name != DefaultGroupName)
         {
             def.Name = DefaultGroupName;
             changed = true;
         }
 
-        var native = GetNativeGroup();
+        var native = GetNativeOverlay();
         if (native.Name != NativeGroupName)
         {
             native.Name = NativeGroupName;
             changed = true;
         }
 
-        if (IsNativeGroup(GetSelected()))
+        if (IsNativeOverlay(GetSelected()))
         {
-            // Select() は内部で EzConfig.Save を呼ぶため、ここでは選択 ID のみ更新し保存はまとめて行う。
-            C.SelectedOverlayGroupId = def.Id;
+            C.SelectedOverlayId = def.Id;
             changed = true;
         }
 
         return changed;
     }
 
-    public static bool TryAddGroup(string name)
+    public static bool TryAddOverlay() =>
+        TryAddOverlay(AllocateCustomGroupName());
+
+    public static bool TryAddOverlay(string name)
     {
         EnsureInitialized();
         var trimmed = name.Trim();
-        if (string.IsNullOrEmpty(trimmed))
-            return false;
-
-        if (trimmed.Equals(DefaultGroupName, StringComparison.OrdinalIgnoreCase)
-            || trimmed.Equals(MergedDefaultGroupName, StringComparison.OrdinalIgnoreCase)
-            || trimmed.Equals(NativeGroupName, StringComparison.OrdinalIgnoreCase))
+        if (!IsUsableCustomGroupName(trimmed))
             return false;
 
         var group = CreateGroup(trimmed);
-        OverlayGroupLayout.CopyLayoutFrom(group, GetDefaultGroup());
-        C.OverlayGroups.Add(group);
+        OverlayGroupLayout.CopyLayoutFrom(group, GetDefaultOverlay());
+        C.Overlays.Add(group);
         EnsureDisplayOrder();
-        C.SelectedOverlayGroupId = group.Id;
-        EzConfig.Save();
+        C.SelectedOverlayId = group.Id;
+        C.Save();
         OverlayWindowHost.RequestRefresh();
         return true;
     }
 
-    public static bool TryRemoveGroup(string groupId)
+    public static bool TryRemoveOverlay(string groupId)
     {
         EnsureInitialized();
-        if (GetById(groupId) is not { } group || IsSystemGroup(group))
+        if (GetById(groupId) is not { } group || IsSystemOverlay(group))
             return false;
 
-        var index = C.OverlayGroups.FindIndex(g => g.Id == groupId);
+        var index = C.Overlays.FindIndex(g => g.Id == groupId);
         if (index < 0)
             return false;
 
-        C.OverlayGroups.RemoveAt(index);
+        C.Overlays.RemoveAt(index);
         DtrOverlayFonts.ReleaseGroup(groupId);
         EnsureDisplayOrder();
-        if (C.SelectedOverlayGroupId == groupId)
-            C.SelectedOverlayGroupId = GetDefaultGroup().Id;
+        if (C.SelectedOverlayId == groupId)
+            C.SelectedOverlayId = GetDefaultOverlay().Id;
 
-        EzConfig.Save();
+        C.Save();
         OverlayWindowHost.RequestRefresh();
         return true;
     }
 
-    public static bool CanRemoveGroup(DtrOverlayGroup group) =>
-        !IsSystemGroup(group);
+    public static bool CanRemoveOverlay(DtrOverlayGroup group) =>
+        !IsSystemOverlay(group);
+
+    public static bool TryRenameOverlay(DtrOverlayGroup group, string name)
+    {
+        if (IsSystemOverlay(group))
+            return false;
+
+        var trimmed = name.Trim();
+        if (!IsUsableCustomGroupName(trimmed) || group.Name == trimmed)
+            return false;
+
+        group.Name = trimmed;
+        C.Save();
+        return true;
+    }
 
     private static void EnsureDisplayOrder()
     {
-        if (C.OverlayGroups.Count == 0)
+        if (C.Overlays.Count == 0)
             return;
 
         DtrOverlayGroup native = null;
         DtrOverlayGroup def = null;
         var customs = new List<DtrOverlayGroup>();
 
-        foreach (var group in C.OverlayGroups)
+        foreach (var group in C.Overlays)
         {
             switch (group.Kind)
             {
@@ -244,11 +242,11 @@ internal static class DtrOverlayGroups
         var ordered = new List<DtrOverlayGroup> { native, def };
         ordered.AddRange(customs);
 
-        if (IsSameOrder(C.OverlayGroups, ordered))
+        if (IsSameOrder(C.Overlays, ordered))
             return;
 
-        C.OverlayGroups.Clear();
-        C.OverlayGroups.AddRange(ordered);
+        C.Overlays.Clear();
+        C.Overlays.AddRange(ordered);
     }
 
     private static bool IsSameOrder(IReadOnlyList<DtrOverlayGroup> current, List<DtrOverlayGroup> ordered)
@@ -267,36 +265,36 @@ internal static class DtrOverlayGroups
 
     public static bool AddPlugin(DtrOverlayGroup group, string entryTitle)
     {
-        if (IsNativeGroup(group))
+        if (IsNativeOverlay(group))
             return false;
 
         if (string.IsNullOrEmpty(entryTitle) || group.EntryOrder.Contains(entryTitle))
             return false;
 
-        if (Svc.DtrBar.Entries.All(e => e.Title != entryTitle))
+        if (PluginServices.DtrBar.Entries.All(e => e.Title != entryTitle))
             return false;
 
         group.EntryOrder.Add(entryTitle);
-        EzConfig.Save();
+        C.Save();
         return true;
     }
 
     public static bool RemovePlugin(DtrOverlayGroup group, string entryTitle)
     {
-        if (IsNativeGroup(group))
+        if (IsNativeOverlay(group))
             return false;
 
         if (!group.EntryOrder.Remove(entryTitle))
             return false;
 
-        EzConfig.Save();
+        C.Save();
         return true;
     }
 
     public static IReadOnlyList<string> GetAvailablePluginTitles(DtrOverlayGroup group) =>
-        IsNativeGroup(group)
+        IsNativeOverlay(group)
             ? []
-            : Svc.DtrBar.Entries
+            : PluginServices.DtrBar.Entries
                 .Select(e => e.Title)
                 .Where(title => !group.EntryOrder.Contains(title))
                 .ToList();
@@ -306,53 +304,84 @@ internal static class DtrOverlayGroups
     /// Does not remove titles that are not registered yet — plugins often register DTR entries
     /// after login, and pruning early would drop the user's saved order (see issue with Follow Vanilla).
     /// </summary>
-    public static void SyncGroupOrder(DtrOverlayGroup group)
+    public static void SyncOverlayOrder(DtrOverlayGroup group)
     {
-        if (IsNativeGroup(group) || !Svc.ClientState.IsLoggedIn)
+        if (IsNativeOverlay(group) || !PluginServices.ClientState.IsLoggedIn)
             return;
 
         group.EntryOrder ??= [];
 
-        foreach (var entry in Svc.DtrBar.Entries)
+        foreach (var entry in PluginServices.DtrBar.Entries)
         {
             if (!group.EntryOrder.Contains(entry.Title))
                 group.EntryOrder.Add(entry.Title);
         }
     }
 
-    public static void ResetGroupToNativeOrder(DtrOverlayGroup group)
-    {
-        if (IsNativeGroup(group))
-            return;
-
-        group.EntryOrder.Clear();
-        group.EntryOrder.AddRange(Svc.DtrBar.Entries.Select(e => e.Title));
-        EzConfig.Save();
-    }
-
     private static DtrOverlayGroup CreateGroup(string name) =>
         new() { Name = name, Kind = DtrOverlayGroupKind.Custom };
 
+    private static bool IsUsableCustomGroupName(string name) =>
+        !string.IsNullOrEmpty(name)
+        && !name.Equals(DefaultGroupName, StringComparison.OrdinalIgnoreCase)
+        && !name.Equals(MergedDefaultGroupName, StringComparison.OrdinalIgnoreCase)
+        && !name.Equals(NativeGroupName, StringComparison.OrdinalIgnoreCase);
+
+    private static void MigrateAutoOverlayNames()
+    {
+        var changed = false;
+        foreach (var group in C.Overlays)
+        {
+            if (group.Kind != DtrOverlayGroupKind.Custom || !group.Name.StartsWith("Group "))
+                continue;
+
+            var suffix = group.Name["Group ".Length..];
+            if (suffix.Length == 0 || !suffix.All(char.IsDigit))
+                continue;
+
+            var next = "Overlay " + suffix;
+            if (C.Overlays.Any(other =>
+                    other.Id != group.Id && other.Name.Equals(next, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            group.Name = next;
+            changed = true;
+        }
+
+        if (changed)
+            C.Save();
+    }
+
+    private static string AllocateCustomGroupName()
+    {
+        for (var n = 1; ; n++)
+        {
+            var name = $"Overlay {n}";
+            if (C.Overlays.All(g => !g.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                return name;
+        }
+    }
+
     private static void EnsureSystemGroups()
     {
-        if (C.OverlayGroups.Count == 0)
-            C.OverlayGroups.Add(CreateDefaultGroup());
-        else if (C.OverlayGroups.All(g => g.Kind != DtrOverlayGroupKind.Default))
-            C.OverlayGroups[0].Kind = DtrOverlayGroupKind.Default;
+        if (C.Overlays.Count == 0)
+            C.Overlays.Add(CreateDefaultGroup());
+        else if (C.Overlays.All(g => g.Kind != DtrOverlayGroupKind.Default))
+            C.Overlays[0].Kind = DtrOverlayGroupKind.Default;
 
-        var defaultGroup = GetDefaultGroup();
+        var defaultGroup = GetDefaultOverlay();
         defaultGroup.Kind = DtrOverlayGroupKind.Default;
-        SyncDefaultGroupDisplayName();
+        SyncDefaultOverlayDisplayName();
 
-        if (C.OverlayGroups.All(g => g.Kind != DtrOverlayGroupKind.Native))
+        if (C.Overlays.All(g => g.Kind != DtrOverlayGroupKind.Native))
         {
-            C.OverlayGroups.Insert(0, CreateNativeGroup());
-            EzConfig.Save();
+            C.Overlays.Insert(0, CreateNativeGroup());
+            C.Save();
         }
         else
         {
-            GetNativeGroup().Kind = DtrOverlayGroupKind.Native;
-            GetNativeGroup().Name = NativeGroupName;
+            GetNativeOverlay().Kind = DtrOverlayGroupKind.Native;
+            GetNativeOverlay().Name = NativeGroupName;
         }
 
         MigrateNativeGroup();
@@ -364,7 +393,7 @@ internal static class DtrOverlayGroups
             return;
 
         C.NativeGroupMigrated = true;
-        EzConfig.Save();
+        C.Save();
     }
 
     private static void MigrateGroupLayout()
@@ -372,11 +401,11 @@ internal static class DtrOverlayGroups
         if (C.GroupLayoutMigrated)
             return;
 
-        foreach (var group in C.OverlayGroups)
+        foreach (var group in C.Overlays)
             OverlayGroupLayout.CopyLayoutFromConfiguration(group);
 
         C.GroupLayoutMigrated = true;
-        EzConfig.Save();
+        C.Save();
     }
 
     private static void MigrateGroupScopedSettings()
@@ -384,12 +413,12 @@ internal static class DtrOverlayGroups
         if (C.GroupScopedSettingsMigrated)
             return;
 
-        var native = GetNativeGroup();
+        var native = GetNativeOverlay();
         native.ShowServerInfo = C.ShowServerInfo;
         native.ServerInfoDisplayMode = C.ServerInfoDisplayMode;
         native.HiddenServerInfoParts = [.. C.HiddenServerInfoParts];
 
-        foreach (var group in C.OverlayGroups)
+        foreach (var group in C.Overlays)
         {
             group.ShowPluginEntrySeparators = C.ShowPluginEntrySeparators;
             group.ShowNativeEntrySeparators = C.ShowNativeEntrySeparators;
@@ -401,7 +430,7 @@ internal static class DtrOverlayGroups
 
         foreach (var legacyTitle in CollectLegacyPluginTitles())
         {
-            foreach (var group in C.OverlayGroups)
+            foreach (var group in C.Overlays)
             {
                 if (group.EntryOrder.Contains(legacyTitle))
                     MigratePluginScopedSettings(group, legacyTitle);
@@ -409,7 +438,7 @@ internal static class DtrOverlayGroups
         }
 
         C.GroupScopedSettingsMigrated = true;
-        EzConfig.Save();
+        C.Save();
     }
 
     private static IEnumerable<string> CollectLegacyPluginTitles()
@@ -520,9 +549,9 @@ internal static class DtrOverlayGroups
             HiddenEntryTitles = [.. C.HiddenEntryTitles],
         };
 
-        C.OverlayGroups = [group];
-        C.SelectedOverlayGroupId = group.Id;
+        C.Overlays = [group];
+        C.SelectedOverlayId = group.Id;
         C.OverlayGroupsMigrated = true;
-        EzConfig.Save();
+        C.Save();
     }
 }

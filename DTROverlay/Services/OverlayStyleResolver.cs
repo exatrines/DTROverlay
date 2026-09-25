@@ -6,18 +6,18 @@ internal static class OverlayStyleResolver
 {
     /// <summary>
     /// Effective font scale for the current overlay group. Never stacks multiple tiers.
-    /// Follow Vanilla (<see cref="Configuration.FollowVanillaDtr"/>) → vanilla match × <see cref="Configuration.FollowVanillaFontSizeScale"/>; group font override ignored.
-    /// Group override enabled → <see cref="DtrOverlayGroup.OverrideFontSizeScale"/> only (default scale ignored).
+    /// Group override enabled → <see cref="DtrOverlayGroup.OverrideFontSizeScale"/> only.
+    /// Follow Vanilla (<see cref="Configuration.FollowNativeDtr"/>) → vanilla match × <see cref="Configuration.FollowNativeFontSizeScale"/>.
     /// Otherwise → <see cref="Configuration.OverlayFontSizeScale"/> (Default Style).
     /// </summary>
     public static float GetEffectiveOverlayFontScale()
     {
-        if (C.FollowVanillaDtr)
-            return FollowVanillaFontScale.GetVanillaPluginScale();
-
         var group = OverlayStyleContext.Group;
         if (group is { OverrideFontSizeScaleEnabled: true })
             return group.OverrideFontSizeScale;
+
+        if (FollowNativeDtrMode.AppliesTo(group))
+            return FollowNativeFontScale.GetVanillaPluginScale();
 
         return C.OverlayFontSizeScale;
     }
@@ -161,7 +161,7 @@ internal static class OverlayStyleResolver
 
         if (physicalKey == OverlayEntryIds.DivisionSeparatorColor)
         {
-            if (group != null && DtrOverlayGroups.IsMergedDefaultPanelGroup(group))
+            if (group != null && DtrOverlayGroups.IsMergedDefaultPanelOverlay(group))
                 return BuildOverrideSeparatorStyle(GroupStyleKeys.OverrideDivisionSeparator(group.Id));
 
             return BuildStoredOrInherit(physicalKey, BuildDefaultSeparatorStyle());
@@ -171,14 +171,14 @@ internal static class OverlayStyleResolver
         {
             if (physicalKey == OverlayEntryIds.NativeSeparatorColor)
             {
-                if (DtrOverlayGroups.IsNativeGroup(group))
+                if (DtrOverlayGroups.IsNativeOverlay(group))
                     return BuildOverrideSeparatorStyle(GroupStyleKeys.OverrideSeparator(group.Id));
 
-                if (DtrOverlayGroups.IsMergedDefaultPanelGroup(group))
+                if (DtrOverlayGroups.IsMergedDefaultPanelOverlay(group))
                     return BuildOverrideSeparatorStyle(GroupStyleKeys.OverrideNativeSeparator(group.Id));
             }
 
-            if (physicalKey == OverlayEntryIds.PluginSeparatorColor && !DtrOverlayGroups.IsNativeGroup(group))
+            if (physicalKey == OverlayEntryIds.PluginSeparatorColor && !DtrOverlayGroups.IsNativeOverlay(group))
                 return BuildOverrideSeparatorStyle(GroupStyleKeys.OverrideSeparator(group.Id));
         }
 
@@ -234,7 +234,7 @@ internal static class OverlayStyleResolver
 
     private static StyleSnapshot BuildOverrideTextStyleForCurrentGroup()
     {
-        var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultGroup();
+        var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultOverlay();
         return BuildOverrideTextStyle(GroupStyleKeys.OverrideText(group.Id));
     }
 

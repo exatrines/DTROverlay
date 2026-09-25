@@ -25,9 +25,9 @@ internal static class PluginEntryAffixSettings
 
     public static void NormalizeAllGroups()
     {
-        if (C.OverlayGroups != null)
+        if (C.Overlays != null)
         {
-            foreach (var group in C.OverlayGroups)
+            foreach (var group in C.Overlays)
             {
                 if (group.PluginEntryAffixesByTitle == null)
                     continue;

@@ -6,61 +6,75 @@ public static partial class SettingsTab
 {
     private static void DrawGroupTooltipSection(DtrOverlayGroup group)
     {
-        DtrImGui.SectionHeader("Tooltip");
+        MirageUi.SubHeader("Tooltip");
 
-        ImGuiSettingControls.LabeledIndented("Position :", () =>
-        {
-            ImGui.BeginDisabled(!group.OverrideTooltipPositionEnabled);
-            var position = group.OverrideTooltipPosition;
-            if (ImGuiSettingControls.DrawTooltipPositionRadios(ref position))
+        DrawOverrideField(
+            "Position",
+            $"groupTooltipPos_{group.Id}",
+            ref group.OverrideTooltipPositionEnabled,
+            width =>
             {
+                var position = group.OverrideTooltipPosition;
+                if (!DrawEnumDropdown(
+                        string.Empty,
+                        ref position,
+                        TooltipPositionLabels,
+                        $"groupTooltipPos_{group.Id}",
+                        width))
+                    return;
+
                 group.OverrideTooltipPosition = position;
-                EzConfig.Save();
-            }
-            ImGui.EndDisabled();
-            ImGui.SameLine();
-            if (ImGui.Checkbox("Override##tooltipPos", ref group.OverrideTooltipPositionEnabled))
-                EzConfig.Save();
-        });
+                C.Save();
+            });
 
-        ImGui.TextUnformatted("Font Size :");
-        ImGuiSettingControls.Indented(() =>
-        {
-            ImGui.BeginDisabled(!group.OverrideTooltipFontSizePxEnabled);
-            ImGui.SetNextItemWidth(72f);
-            if (ImGui.DragFloat("##groupTooltipFontSize", ref group.OverrideTooltipFontSizePx, 0.5f, 8f, 48f, "%.0f"))
+        DrawOverrideField(
+            "Font Size (px)",
+            $"groupTooltipFontSize_{group.Id}",
+            ref group.OverrideTooltipFontSizePxEnabled,
+            width =>
             {
+                if (!MirageUi.SliderFloat(
+                        string.Empty,
+                        ref group.OverrideTooltipFontSizePx,
+                        8f,
+                        48f,
+                        "%.0f",
+                        $"groupTooltipFontSize_{group.Id}",
+                        width))
+                    return;
+
                 DtrOverlayFonts.NotifyTooltipSizeChanged();
-                EzConfig.Save();
-            }
-            ImGui.EndDisabled();
-            ImGui.SameLine();
-            if (ImGui.Checkbox("Override##tooltipSize", ref group.OverrideTooltipFontSizePxEnabled))
-                EzConfig.Save();
-        });
+                C.Save();
+            });
 
-        ImGui.TextUnformatted("Colors :");
-        ImGuiSettingControls.Indented(() =>
-        {
-            ImGui.BeginDisabled(!group.OverrideTooltipTextColorEnabled);
-            ImGui.TextUnformatted("Text");
-            ImGui.SameLine();
-            if (ImGui.ColorEdit4("##groupTooltipText", ref group.OverrideTooltipTextColor, DtrStyle.ColorEditFlags))
-                EzConfig.Save();
-            ImGui.EndDisabled();
-            ImGui.SameLine();
-            if (ImGui.Checkbox("Override##tooltipText", ref group.OverrideTooltipTextColorEnabled))
-                EzConfig.Save();
+        DrawOverrideField(
+            "Text",
+            $"groupTooltipText_{group.Id}",
+            ref group.OverrideTooltipTextColorEnabled,
+            width =>
+            {
+                if (MirageUi.ColorEdit4(
+                        string.Empty,
+                        ref group.OverrideTooltipTextColor,
+                        DtrStyle.ColorEditFlags,
+                        $"groupTooltipText_{group.Id}",
+                        width))
+                    C.Save();
+            });
 
-            ImGui.BeginDisabled(!group.OverrideTooltipBackgroundColorEnabled);
-            ImGui.TextUnformatted("Background");
-            ImGui.SameLine();
-            if (ImGui.ColorEdit4("##groupTooltipBg", ref group.OverrideTooltipBackgroundColor, DtrStyle.ColorEditFlags))
-                EzConfig.Save();
-            ImGui.EndDisabled();
-            ImGui.SameLine();
-            if (ImGui.Checkbox("Override##tooltipBg", ref group.OverrideTooltipBackgroundColorEnabled))
-                EzConfig.Save();
-        });
+        DrawOverrideField(
+            "Background",
+            $"groupTooltipBg_{group.Id}",
+            ref group.OverrideTooltipBackgroundColorEnabled,
+            width =>
+            {
+                if (MirageUi.ColorEdit4(
+                        string.Empty,
+                        ref group.OverrideTooltipBackgroundColor,
+                        DtrStyle.ColorEditFlags,
+                        $"groupTooltipBg_{group.Id}",
+                        width))
+                    C.Save();
+            });
     }
 }

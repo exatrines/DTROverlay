@@ -107,9 +107,9 @@ public static partial class DtrImGui
 
         var division = DtrSeparators.CreateDivision();
 
-        if (FollowVanillaDtrMode.IsActive)
+        if (FollowNativeDtrMode.IsActive)
         {
-            if (FollowVanillaDtrMode.ShouldPrependDivisionSeparatorToPluginList())
+            if (FollowNativeDtrMode.ShouldPrependDivisionSeparatorToPluginList())
             {
                 var prepended = new List<VisibleDtrEntry>(pluginEntries.Count + 1) { division };
                 prepended.AddRange(pluginEntries);

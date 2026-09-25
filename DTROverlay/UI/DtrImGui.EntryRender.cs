@@ -207,7 +207,7 @@ public static partial class DtrImGui
         string dtrEntryTitle,
         byte[] hoverTooltipSeStringData)
     {
-        var wrap = Svc.Texture.GetFromGame(image.TexturePath).GetWrapOrDefault();
+        var wrap = PluginServices.Texture.GetFromGame(image.TexturePath).GetWrapOrDefault();
         var size = DtrNativeImage.GetDisplaySize(image, IconHeight * (imageScale > 0f ? imageScale : 1f));
         var slotWidth = EntryFixedWidth.ResolveWidth(layoutKey, size.X);
         var slotSize = new Vector2(slotWidth, LineHeight);
@@ -359,7 +359,7 @@ public static partial class DtrImGui
         string hoverTooltip = null,
         byte[] hoverTooltipSeStringData = null)
     {
-        if (C.OverlayGroups != null && C.OverlayGroups.Any(g => g.OverlayEditMode))
+        if (C.Overlays != null && C.Overlays.Any(g => g.OverlayEditMode))
         {
             ImGui.Dummy(size);
             return;

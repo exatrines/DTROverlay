@@ -47,15 +47,10 @@ public sealed class OverlayWindow : Window
         if (_group == null)
             return false;
 
-        if (C.FollowVanillaDtr
-            && _groupId != DtrOverlayGroups.GetDefaultGroup().Id
-            && _groupId != DtrOverlayGroups.GetNativeGroup().Id)
+        if (DtrOverlayGroups.IsNativeOverlay(_group) && !DtrOverlayGroups.IsSplitNativeMode())
             return false;
 
-        if (DtrOverlayGroups.IsNativeGroup(_group) && !DtrOverlayGroups.IsSplitNativeMode())
-            return false;
-
-        return (_group.Enabled && C.OverlayEnabled) || _group.OverlayEditMode;
+        return _group.Enabled || _group.OverlayEditMode;
     }
 
     public override void PreDraw()
@@ -65,20 +60,21 @@ public sealed class OverlayWindow : Window
 
         _styleScope?.Dispose();
         _styleScope = OverlayStyleContext.Push(_group);
-        FollowVanillaDtrMode.EnforceLayoutConstraints();
+        FollowNativeDtrMode.EnforceLayoutConstraints();
         UpdateEditModeState();
 
         if (!DrawConditions())
             return;
 
-        if (FollowVanillaDtrMode.IsActive && !FollowVanillaDtrMode.IsVanillaDtrVisible)
+        var followDefault = FollowNativeDtrMode.AppliesTo(_group);
+        if (followDefault && !FollowNativeDtrMode.IsVanillaDtrVisible)
             return;
 
         _content = DtrOverlayCollector.Collect(_group);
         if (_content.IsEmpty && !_group.OverlayEditMode)
             return;
 
-        if (FollowVanillaDtrMode.IsActive)
+        if (followDefault)
         {
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
             _followVanillaPaddingPushed = true;
@@ -88,7 +84,7 @@ public sealed class OverlayWindow : Window
             _followVanillaPaddingPushed = false;
         }
 
-        if (!FollowVanillaDtrMode.IsActive)
+        if (!followDefault)
         {
             OverlayPositioning.MigrateLegacyTopLeftAnchor(_group);
             if (_appliedOrigin is { } previousOrigin)
@@ -106,7 +102,7 @@ public sealed class OverlayWindow : Window
             if (_group == null || !DrawConditions())
                 return;
 
-            if (FollowVanillaDtrMode.IsActive && !FollowVanillaDtrMode.IsVanillaDtrVisible)
+            if (FollowNativeDtrMode.AppliesTo(_group) && !FollowNativeDtrMode.IsVanillaDtrVisible)
                 return;
 
             if (_content.IsEmpty && _group.OverlayEditMode)
@@ -127,7 +123,7 @@ public sealed class OverlayWindow : Window
                 LastHeightsByGroup[_groupId] = size.Y;
             }
 
-            if (_group.OverlayEditMode && !FollowVanillaDtrMode.IsActive)
+            if (_group.OverlayEditMode && !FollowNativeDtrMode.AppliesTo(_group))
                 HandleEditModeDrag(_group);
         }
         finally
@@ -155,7 +151,7 @@ public sealed class OverlayWindow : Window
 
     private void DrawContent()
     {
-        if (FollowVanillaDtrMode.IsActive)
+        if (FollowNativeDtrMode.AppliesTo(_group))
         {
             var entries = _content.NativeEntries.Count > 0
                 ? _content.NativeEntries

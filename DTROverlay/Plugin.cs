@@ -1,9 +1,8 @@
-using System.Numerics;
-using Dalamud.Interface.Windowing;
-using Dalamud.Plugin;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Command;
+using Dalamud.Game.Gui.Dtr;
 using DTROverlay.Services;
 using DTROverlay.UI;
-using ECommons.SimpleGui;
 
 namespace DTROverlay;
 
@@ -15,37 +14,70 @@ public sealed class Plugin : IDalamudPlugin
     internal static Plugin P = null!;
 
     private readonly WindowSystem _overlayWindows = new("DTROverlayOverlay");
+    private readonly WindowSystem _uiWindows = new("DTROverlay");
+    private readonly MainWindow _mainWindow;
+    private readonly SettingsWindow _settingsWindow;
 
-    public Plugin(IDalamudPluginInterface pluginInterface)
+    public Plugin(
+        IDalamudPluginInterface pluginInterface,
+        ICommandManager commandManager,
+        IClientState clientState,
+        IObjectTable objectTable,
+        IGameGui gameGui,
+        IGameConfig gameConfig,
+        IAddonLifecycle addonLifecycle,
+        IDtrBar dtrBar,
+        ITextureProvider textureProvider,
+        IPluginLog log,
+        IChatGui chatGui)
     {
         P = this;
-        ECommonsMain.Init(pluginInterface, this);
+        PluginServices.Init(
+            pluginInterface,
+            commandManager,
+            clientState,
+            objectTable,
+            gameGui,
+            gameConfig,
+            addonLifecycle,
+            dtrBar,
+            textureProvider,
+            log,
+            chatGui);
 
-        C = EzConfig.Init<Configuration>();
+        C = Configuration.Load(pluginInterface);
         MigrateConfiguration(C);
+        C.ThemeColors ??= MirageColorSettings.CreateDefault();
         DtrOverlayGroups.EnsureInitialized();
-        EzConfigGui.Init(UI.ConfigWindow.Draw, windowType: EzConfigGui.WindowType.Both);
-        ConfigureConfigWindow();
+
+        MirageUi.ConfigureTheme(() => C.ThemeColors ?? MirageColorSettings.CreateDefault());
+        MirageUi.Init(pluginInterface, textureProvider, log);
+        MirageUi.ConfigurePluginInfo(info =>
+        {
+            info.DiscordUrl = "https://discord.gg/gRfxXNZWMs";
+            info.SupportUrl = "https://exatrines.github.io/support/";
+        });
+
+        _settingsWindow = new SettingsWindow();
+        _mainWindow = new MainWindow(ToggleSettings);
+        _uiWindows.AddWindow(_mainWindow);
+        _uiWindows.AddWindow(_settingsWindow);
 
         OverlayWindowHost.Initialize(_overlayWindows);
         DtrNativePluginHider.Register();
-        Svc.PluginInterface.UiBuilder.Draw += DrawOverlay;
+        pluginInterface.UiBuilder.Draw += DrawUi;
+        pluginInterface.UiBuilder.OpenConfigUi += ToggleSettings;
+        pluginInterface.UiBuilder.OpenMainUi += ToggleMain;
 
-        const string help = "Toggle settings UI. Subcommands: on|off|toggle";
-        EzCmd.Add("/dtroverlay", PluginCommands.Handle, help);
-    }
-
-    private static void ConfigureConfigWindow()
-    {
-        if (EzConfigGui.Window == null)
-            return;
-
-        EzConfigGui.Window.SizeConstraints = new WindowSizeConstraints
+        commandManager.AddHandler("/dtroverlay", new CommandInfo(PluginCommands.Handle)
         {
-            MinimumSize = ConfigUiConstants.MinimumWindowSize,
-            MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
-        };
+            HelpMessage = "Toggle the overlay editor. Settings open from the gear icon.",
+        });
     }
+
+    internal void ToggleMain() => _mainWindow.Toggle();
+
+    internal void ToggleSettings() => _settingsWindow.Toggle();
 
     private static void MigrateConfiguration(Configuration config)
     {
@@ -58,15 +90,24 @@ public sealed class Plugin : IDalamudPlugin
         config.TooltipPositionMigrated = true;
     }
 
-    private void DrawOverlay() => OverlayWindowHost.Draw();
+    private void DrawUi()
+    {
+        _uiWindows.Draw();
+        OverlayWindowHost.Draw();
+    }
 
     public void Dispose()
     {
-        Svc.PluginInterface.UiBuilder.Draw -= DrawOverlay;
+        PluginServices.PluginInterface.UiBuilder.Draw -= DrawUi;
+        PluginServices.PluginInterface.UiBuilder.OpenConfigUi -= ToggleSettings;
+        PluginServices.PluginInterface.UiBuilder.OpenMainUi -= ToggleMain;
+        PluginServices.CommandManager.RemoveHandler("/dtroverlay");
         DtrNativePluginHider.Unregister();
         DtrOverlayFonts.Dispose();
+        MirageUi.Dispose();
+        _uiWindows.RemoveAllWindows();
         _overlayWindows.RemoveAllWindows();
-        ECommonsMain.Dispose();
+        PluginServices.Clear();
         P = null!;
         C = null!;
     }

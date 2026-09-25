@@ -6,19 +6,12 @@ public static partial class SettingsTab
 {
     private static void DrawDefaultStyleSection()
     {
-        DtrImGui.SectionHeader("Default Style");
+        MirageUi.SubHeader("Default Style");
 
-        if (!C.FollowVanillaDtr)
-        {
-            ImGui.Text("Font Size :");
-            ImGuiSettingControls.Indented(() =>
-            {
-                ImGui.TextUnformatted("Scale");
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth(72f);
-                ImGuiSettingControls.DrawOverlayFontScaleDrag("##defaultOverlayFontSizeScale", ref C.OverlayFontSizeScale);
-            });
-        }
+        using (MirageUi.DisabledIf(C.FollowNativeDtr))
+            DrawOverlayFontScale("Font Size Scale", ref C.OverlayFontSizeScale, "defaultOverlayFontSizeScale");
+        if (C.FollowNativeDtr)
+            TooltipWhenDisabled("Follow native DTR uses its own Font Size Scale.");
 
         DrawDefaultSeparatorWidthSetting();
         DrawDefaultStyleColorTable();
@@ -26,44 +19,37 @@ public static partial class SettingsTab
 
     private static void DrawDefaultSeparatorWidthSetting()
     {
-        ImGui.TextUnformatted("Separator width :");
-        ImGuiSettingControls.Indented(() =>
-        {
-            var width = C.SeparatorSlotWidthPx;
-            ImGui.SetNextItemWidth(88f);
-            if (ImGuiSettingControls.DrawSeparatorSlotWidthDrag("##defaultSeparatorSlotWidth", ref width))
-            {
-                C.SeparatorSlotWidthPx = width;
-                EzConfig.Save();
-            }
-        });
+        var width = C.SeparatorSlotWidthPx;
+        if (!MirageUi.SliderInt("Separator width", ref width, 0, OverlaySlotWidthSettings.MaxWidth, "defaultSeparatorSlotWidth"))
+            return;
+
+        C.SeparatorSlotWidthPx = width;
+        C.Save();
     }
 
     private static void DrawDefaultStyleColorTable()
     {
-        ImGui.TextUnformatted("Font Colors :");
-        ImGuiSettingControls.Indented(() =>
-        {
-            var defaultGroup = DtrOverlayGroups.GetDefaultGroup();
-            var divisionRowEnabled = OverlayStyleKeys.IsDefaultStyleDivisionColorRowEnabled(defaultGroup);
+        MirageUi.Text("Font Colors", MirageUi.Color.Secondary);
 
-            if (!BeginFontColorStyleTable("##defaultStyleColors"))
-                return;
+        var defaultGroup = DtrOverlayGroups.GetDefaultOverlay();
+        var divisionRowEnabled = OverlayStyleKeys.IsDefaultStyleDivisionColorRowEnabled(defaultGroup);
 
-            DrawStyleHierarchyColorRow("Text", OverlayEntryIds.DefaultText, "defaultText");
-            DrawStyleHierarchyColorRow("Separator", OverlayEntryIds.DefaultSeparator, "defaultSeparator");
-            DrawStyleHierarchyColorRow(
-                "Division",
-                OverlayEntryIds.DivisionSeparatorColor,
-                "divisionSep",
-                divisionRowEnabled);
+        if (!BeginFontColorStyleTable("##defaultStyleColors"))
+            return;
 
-            ImGui.EndTable();
-        });
+        DrawStyleHierarchyColorRow("Text", OverlayEntryIds.DefaultText, "defaultText");
+        DrawStyleHierarchyColorRow("Separator", OverlayEntryIds.DefaultSeparator, "defaultSeparator");
+        DrawStyleHierarchyColorRow(
+            "Division",
+            OverlayEntryIds.DivisionSeparatorColor,
+            "divisionSep",
+            divisionRowEnabled);
+
+        ImGui.EndTable();
     }
 
     private static bool BeginFontColorStyleTable(string id) =>
-        ImGuiEx.BeginDefaultTable(id, ["Label", "Text", "Edge", "Shadow"]);
+        SettingsTables.BeginDefaultTable(id, ["Label", "Text", "Edge", "Shadow"]);
 
     private static void DrawStyleHierarchyColorRow(
         string label,

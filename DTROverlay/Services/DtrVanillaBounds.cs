@@ -1,6 +1,3 @@
-using DTROverlay.UI;
-using ECommons;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace DTROverlay.Services;
@@ -33,46 +30,29 @@ internal static unsafe class DtrVanillaBounds
 {
     private const uint DalamudNodeIdBase = 1000;
 
-    // _DTR ノードツリーの走査は重く、Follow Vanilla 描画中は 1 フレームに複数回（座標系違いで最大 3 回）
-    // 呼ばれる。同一フレーム内の結果は不変なので、フレーム番号でキャッシュして走査回数を 1 回に抑える。
+    // _DTR の当たり判定は 1 フレーム内で変わらない。Follow 描画中の再走査を避ける。
     private static int _cachedFrame = -1;
-    private static bool _screenComputed;
-    private static bool _screenSuccess;
-    private static VanillaDtrBounds _screenBounds;
-    private static bool _localComputed;
-    private static bool _localSuccess;
-    private static VanillaDtrBounds _localBounds;
+    private static bool _computed;
+    private static bool _success;
+    private static VanillaDtrBounds _bounds;
 
-    public static bool TryGet(out VanillaDtrBounds bounds, bool useScreenCoordinates = false)
+    public static bool TryGet(out VanillaDtrBounds bounds)
     {
         var frame = ImGui.GetFrameCount();
         if (frame != _cachedFrame)
         {
             _cachedFrame = frame;
-            _screenComputed = false;
-            _localComputed = false;
+            _computed = false;
         }
 
-        if (useScreenCoordinates)
+        if (!_computed)
         {
-            if (!_screenComputed)
-            {
-                _screenSuccess = TryGetUncached(out _screenBounds, true);
-                _screenComputed = true;
-            }
-
-            bounds = _screenBounds;
-            return _screenSuccess;
+            _success = TryGetUncached(out _bounds);
+            _computed = true;
         }
 
-        if (!_localComputed)
-        {
-            _localSuccess = TryGetUncached(out _localBounds, false);
-            _localComputed = true;
-        }
-
-        bounds = _localBounds;
-        return _localSuccess;
+        bounds = _bounds;
+        return _success;
     }
 
     public static bool IsAddonVisible()
@@ -80,17 +60,17 @@ internal static unsafe class DtrVanillaBounds
         if (!TryGetAddon(out var addon))
             return false;
 
-        return GenericHelpers.IsAddonReady(addon);
+        return IsAddonReady(addon);
     }
 
-    private static bool TryGetUncached(out VanillaDtrBounds bounds, bool useScreenCoordinates = false)
+    private static bool TryGetUncached(out VanillaDtrBounds bounds)
     {
         bounds = default;
 
         if (!TryGetAddon(out var addon))
             return false;
 
-        if (!GenericHelpers.IsAddonReady(addon))
+        if (!IsAddonReady(addon))
             return false;
 
         if (addon->RootNode == null || addon->UldManager.NodeList == null)
@@ -100,15 +80,26 @@ internal static unsafe class DtrVanillaBounds
         if (scale <= 0f)
             scale = 1f;
 
-        if (!TryGetDisplayedNativeHorizontalBounds(addon, scale, useScreenCoordinates, out var screenLeft, out var screenRight))
+        if (!TryGetCollisionNode(addon, out var collision) || collision->Width <= 0)
             return false;
 
-        if (!TryGetNativeTextMetrics(addon, scale, out var nativeTextCenterY, out var nativeTextLineHeight))
-            ApplyFallbackNativeTextMetrics(addon, scale, out nativeTextCenterY, out nativeTextLineHeight);
+        var localLeft = GetRootRelativeX(collision, addon->RootNode);
+        var screenLeft = addon->X + (localLeft * scale);
+        var screenRight = screenLeft + (collision->Width * scale);
+        if (screenRight <= screenLeft)
+            return false;
 
-        TryGetCollisionRowHeight(addon, scale, out var rowHeight);
-        if (rowHeight > 0f)
+        var rowHeight = collision->Height > 0 ? collision->Height * scale : addon->RootNode->Height * scale;
+
+        if (!TryGetNativeTextMetrics(addon, scale, out var nativeTextCenterY, out var nativeTextLineHeight))
+        {
+            nativeTextLineHeight = rowHeight;
+            nativeTextCenterY = addon->Y + (nativeTextLineHeight * 0.5f);
+        }
+        else if (collision->Height > 0)
+        {
             nativeTextLineHeight = MathF.Min(nativeTextLineHeight, rowHeight);
+        }
 
         var barScreenLeft = addon->X;
         var barWidth = addon->RootNode->Width * scale;
@@ -129,7 +120,7 @@ internal static unsafe class DtrVanillaBounds
     {
         addon = null;
 
-        var addonPtr = Svc.GameGui.GetAddonByName("_DTR");
+        var addonPtr = PluginServices.GameGui.GetAddonByName("_DTR");
         if (addonPtr == null)
             return false;
 
@@ -137,88 +128,25 @@ internal static unsafe class DtrVanillaBounds
         return addon != null;
     }
 
-    private static bool TryGetDisplayedNativeHorizontalBounds(
-        AtkUnitBase* addon,
-        float scale,
-        bool preferScreenCoordinates,
-        out float screenLeft,
-        out float screenRight)
-    {
-        screenLeft = float.MaxValue;
-        screenRight = float.MinValue;
-        var minLocalX = float.MaxValue;
-        var maxLocalX = float.MinValue;
-        var foundScreen = false;
-        var foundLocal = false;
-        var root = addon->RootNode;
+    private static bool IsAddonReady(AtkUnitBase* addon) =>
+        addon->IsVisible
+        && addon->UldManager.LoadedState == AtkLoadState.Loaded
+        && addon->IsFullyLoaded();
 
+    private static bool TryGetCollisionNode(AtkUnitBase* addon, out AtkResNode* node)
+    {
         for (var i = 0; i < addon->UldManager.NodeListCount; i++)
         {
-            var node = addon->UldManager.NodeList[i];
-            if (node == null || node->NodeId >= DalamudNodeIdBase || !IsEffectivelyVisible(node))
+            node = addon->UldManager.NodeList[i];
+            if (node == null || !node->IsVisible() || node->Type != NodeType.Collision)
                 continue;
 
-            if (node->Type == NodeType.Collision)
-                continue;
-
-            if (node->Type == NodeType.Res)
-            {
-                if (node == root)
-                    continue;
-
-                AccumulateSubtreeHorizontalBounds(
-                    addon,
-                    scale,
-                    root,
-                    preferScreenCoordinates,
-                    node,
-                    ref screenLeft,
-                    ref screenRight,
-                    ref foundScreen,
-                    ref minLocalX,
-                    ref maxLocalX,
-                    ref foundLocal);
-                continue;
-            }
-
-            if (!IsDisplayLeafNode(node))
-                continue;
-
-            if (HasVisibleResAncestor(node, root))
-                continue;
-
-            ExtendHorizontalBounds(
-                addon,
-                scale,
-                root,
-                preferScreenCoordinates,
-                node,
-                ref screenLeft,
-                ref screenRight,
-                ref foundScreen,
-                ref minLocalX,
-                ref maxLocalX,
-                ref foundLocal);
-        }
-
-        if (preferScreenCoordinates && foundScreen && screenRight > screenLeft)
-            return true;
-
-        if (foundLocal && maxLocalX > minLocalX)
-        {
-            screenLeft = addon->X + (minLocalX * scale);
-            screenRight = addon->X + (maxLocalX * scale);
             return true;
         }
 
-        if (foundScreen && screenRight > screenLeft)
-            return true;
-
+        node = null;
         return false;
     }
-
-    private static bool IsDisplayLeafNode(AtkResNode* node) =>
-        node->Type == NodeType.Text || node->Type == NodeType.Image;
 
     private static bool IsEffectivelyVisible(AtkResNode* node)
     {
@@ -234,69 +162,6 @@ internal static unsafe class DtrVanillaBounds
         return true;
     }
 
-    private static bool HasVisibleResAncestor(AtkResNode* node, AtkResNode* root)
-    {
-        for (var ancestor = node->ParentNode; ancestor != null && ancestor != root; ancestor = ancestor->ParentNode)
-        {
-            if (ancestor->Type == NodeType.Res && IsEffectivelyVisible(ancestor))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static void AccumulateSubtreeHorizontalBounds(
-        AtkUnitBase* addon,
-        float scale,
-        AtkResNode* root,
-        bool preferScreenCoordinates,
-        AtkResNode* node,
-        ref float screenLeft,
-        ref float screenRight,
-        ref bool foundScreen,
-        ref float minLocalX,
-        ref float maxLocalX,
-        ref bool foundLocal)
-    {
-        if (node == null || !IsEffectivelyVisible(node))
-            return;
-
-        if (node->Type == NodeType.Res)
-            ExtendContainerHorizontalBounds(addon, scale, root, node, ref screenLeft, ref screenRight, ref foundScreen, ref minLocalX, ref maxLocalX, ref foundLocal);
-
-        if (IsDisplayLeafNode(node))
-        {
-            ExtendHorizontalBounds(
-                addon,
-                scale,
-                root,
-                preferScreenCoordinates,
-                node,
-                ref screenLeft,
-                ref screenRight,
-                ref foundScreen,
-                ref minLocalX,
-                ref maxLocalX,
-                ref foundLocal);
-        }
-
-        for (var child = node->ChildNode; child != null; child = child->NextSiblingNode)
-        {
-            AccumulateSubtreeHorizontalBounds(
-                addon,
-                scale,
-                root,
-                preferScreenCoordinates,
-                child,
-                ref screenLeft,
-                ref screenRight,
-                ref foundScreen,
-                ref minLocalX,
-                ref maxLocalX,
-                ref foundLocal);
-        }
-    }
-
     private static float GetRootRelativeX(AtkResNode* node, AtkResNode* root)
     {
         var x = 0f;
@@ -304,137 +169,6 @@ internal static unsafe class DtrVanillaBounds
             x += current->X;
 
         return x;
-    }
-
-    private static void ExtendContainerHorizontalBounds(
-        AtkUnitBase* addon,
-        float scale,
-        AtkResNode* root,
-        AtkResNode* container,
-        ref float screenLeft,
-        ref float screenRight,
-        ref bool foundScreen,
-        ref float minLocalX,
-        ref float maxLocalX,
-        ref bool foundLocal)
-    {
-        if (container->Width <= 0)
-            return;
-
-        var localLeft = GetRootRelativeX(container, root);
-        var localRight = localLeft + container->Width;
-        if (localRight <= localLeft)
-            return;
-
-        minLocalX = MathF.Min(minLocalX, localLeft);
-        maxLocalX = MathF.Max(maxLocalX, localRight);
-        foundLocal = true;
-
-        var containerScreenLeft = addon->X + (localLeft * scale);
-        var containerScreenRight = addon->X + (localRight * scale);
-        screenLeft = MathF.Min(screenLeft, containerScreenLeft);
-        screenRight = MathF.Max(screenRight, containerScreenRight);
-        foundScreen = true;
-    }
-
-    private static void ExtendHorizontalBounds(
-        AtkUnitBase* addon,
-        float scale,
-        AtkResNode* root,
-        bool preferScreenCoordinates,
-        AtkResNode* node,
-        ref float screenLeft,
-        ref float screenRight,
-        ref bool foundScreen,
-        ref float minLocalX,
-        ref float maxLocalX,
-        ref bool foundLocal)
-    {
-        var width = GetNodeWidth(node, scale);
-        if (width <= 0f)
-            return;
-
-        if (preferScreenCoordinates && TryGetNodeScreenLeft(node, out var nodeScreenLeft))
-        {
-            var nodeScreenRight = nodeScreenLeft + width;
-            if (nodeScreenRight <= nodeScreenLeft)
-                return;
-
-            screenLeft = MathF.Min(screenLeft, nodeScreenLeft);
-            screenRight = MathF.Max(screenRight, nodeScreenRight);
-            foundScreen = true;
-            return;
-        }
-
-        var localLeft = GetRootRelativeX(node, root);
-        var localRight = localLeft + (width / scale);
-        if (localRight <= localLeft)
-            return;
-
-        minLocalX = MathF.Min(minLocalX, localLeft);
-        maxLocalX = MathF.Max(maxLocalX, localRight);
-        foundLocal = true;
-    }
-
-    private static bool TryGetNodeScreenLeft(AtkResNode* node, out float screenLeft)
-    {
-        screenLeft = 0f;
-
-        if (node->Type == NodeType.Text)
-        {
-            var textNode = node->GetAsAtkTextNode();
-            if (textNode != null && textNode->ScreenX > 0f)
-            {
-                screenLeft = textNode->ScreenX;
-                return true;
-            }
-        }
-
-        if (node->ScreenX > 0f)
-        {
-            screenLeft = node->ScreenX;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static float GetNodeWidth(AtkResNode* node, float scale)
-    {
-        if (node->Type == NodeType.Text)
-        {
-            var textNode = node->GetAsAtkTextNode();
-            if (textNode == null)
-                return node->Width * scale;
-
-            ushort drawWidth = 0;
-            ushort drawHeight = 0;
-            textNode->GetTextDrawSize(&drawWidth, &drawHeight, null, 0, -1, true);
-            if (drawWidth > 0)
-                return drawWidth * scale;
-        }
-
-        if (node->Type == NodeType.Image)
-        {
-            var imageNode = node->GetAsAtkImageNode();
-            if (imageNode != null)
-            {
-                if (imageNode->Width > 0)
-                    return imageNode->Width * scale;
-
-                if (DtrNativeImage.TryCreate(imageNode, out var info))
-                {
-                    var width = info.NodeWidth > 0 ? info.NodeWidth : info.PartWidth;
-                    if (width > 0)
-                        return width * scale;
-                }
-            }
-        }
-
-        if (node->Width > 0)
-            return node->Width * scale;
-
-        return 0f;
     }
 
     private static bool TryGetNativeTextMetrics(
@@ -466,17 +200,6 @@ internal static unsafe class DtrVanillaBounds
         glyphHeights.Sort();
         lineHeight = glyphHeights[0];
         return lineHeight > 0f;
-    }
-
-    private static void ApplyFallbackNativeTextMetrics(
-        AtkUnitBase* addon,
-        float scale,
-        out float centerY,
-        out float lineHeight)
-    {
-        TryGetCollisionRowHeight(addon, scale, out var rowHeight);
-        lineHeight = rowHeight > 0f ? rowHeight : addon->RootNode->Height * scale;
-        centerY = addon->Y + (lineHeight * 0.5f);
     }
 
     private static void AccumulateNativeTextMetrics(
@@ -516,20 +239,5 @@ internal static unsafe class DtrVanillaBounds
 
         if (node->NextSiblingNode != null)
             AccumulateNativeTextMetrics(node->NextSiblingNode, scale, ref minTop, ref maxBottom, glyphHeights, ref found);
-    }
-
-    private static void TryGetCollisionRowHeight(AtkUnitBase* addon, float scale, out float rowHeight)
-    {
-        rowHeight = addon->RootNode->Height * scale;
-
-        for (var i = 0; i < addon->UldManager.NodeListCount; i++)
-        {
-            var node = addon->UldManager.NodeList[i];
-            if (node == null || !node->IsVisible() || node->Type != NodeType.Collision)
-                continue;
-
-            rowHeight = node->Height * scale;
-            return;
-        }
     }
 }

@@ -307,7 +307,7 @@ internal static class OverlayEntryIds
         CopyStyleStored(ServerInfoTextGroup, DefaultText);
 
         C.StyleHierarchyMigrated = true;
-        EzConfig.Save();
+        C.Save();
     }
 
     /// <summary>Copies legacy Native-group override colors into Default+Native merged override keys.</summary>
@@ -316,8 +316,8 @@ internal static class OverlayEntryIds
         if (C.MergedDefaultOverrideStylesMigrated)
             return;
 
-        var def = DtrOverlayGroups.GetDefaultGroup();
-        var native = DtrOverlayGroups.GetNativeGroup();
+        var def = DtrOverlayGroups.GetDefaultOverlay();
+        var native = DtrOverlayGroups.GetNativeOverlay();
 
         CopyOverrideStyleIfMissing(GroupStyleKeys.OverrideNativeText(def.Id), GroupStyleKeys.OverrideText(native.Id));
         CopyOverrideStyleIfMissing(
@@ -325,7 +325,7 @@ internal static class OverlayEntryIds
             GroupStyleKeys.OverrideSeparator(native.Id));
 
         C.MergedDefaultOverrideStylesMigrated = true;
-        EzConfig.Save();
+        C.Save();
     }
 
     private static void CopyOverrideStyleIfMissing(string toKey, string fromKey)

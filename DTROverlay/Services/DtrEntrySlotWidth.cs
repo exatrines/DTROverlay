@@ -28,7 +28,7 @@ internal static class DtrEntrySlotWidth
             return measuredWidth;
 
         var pluginTitle = GroupStyleKeys.GetPluginTitleFromLayoutKey(layoutKey);
-        var entry = Svc.DtrBar.Entries.FirstOrDefault(e => e.Title == pluginTitle);
+        var entry = PluginServices.DtrBar.Entries.FirstOrDefault(e => e.Title == pluginTitle);
         if (entry == null)
             return measuredWidth;
 
@@ -48,7 +48,7 @@ internal static class DtrEntrySlotWidth
             return true;
         }
 
-        var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultGroup();
+        var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultOverlay();
         var overlayMin = OverlaySlotWidthSettings.Get(group, entry.Title);
         if (overlayMin > 0)
         {
@@ -64,7 +64,7 @@ internal static class DtrEntrySlotWidth
         if (entry.MinimumWidth > 0)
             return DtrSlotWidthSource.PluginMinimumWidth;
 
-        var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultGroup();
+        var group = OverlayStyleContext.Group ?? DtrOverlayGroups.GetDefaultOverlay();
         return OverlaySlotWidthSettings.Get(group, entry.Title) > 0
             ? DtrSlotWidthSource.OverlayMinWidth
             : DtrSlotWidthSource.None;

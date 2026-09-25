@@ -37,7 +37,7 @@ internal static class OverlayWindowHost
 
         DtrOverlayGroups.EnsureInitialized();
 
-        var activeIds = C.OverlayGroups.Select(g => g.Id).ToHashSet();
+        var activeIds = C.Overlays.Select(g => g.Id).ToHashSet();
 
         foreach (var window in _windowSystem.Windows.ToList())
         {
@@ -45,9 +45,7 @@ internal static class OverlayWindowHost
                 _windowSystem.RemoveWindow(window);
         }
 
-        var groupsToHost = C.FollowVanillaDtr
-            ? [DtrOverlayGroups.GetDefaultGroup()]
-            : C.OverlayGroups.Where(DtrOverlayGroups.IsGroupHostedAsOverlay).ToList();
+        var groupsToHost = C.Overlays.Where(DtrOverlayGroups.IsOverlayHosted).ToList();
 
         foreach (var group in groupsToHost)
         {

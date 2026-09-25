@@ -7,11 +7,11 @@ public static partial class SettingsTab
     private readonly record struct StyleColorRow(string Label, string LayoutKey, string IdPrefix, bool Enabled = true);
 
     private static bool UsesFollowVanillaDefaultGroupSettings(DtrOverlayGroup group) =>
-        C.FollowVanillaDtr && DtrOverlayGroups.IsDefaultGroup(group);
+        C.FollowNativeDtr && DtrOverlayGroups.IsDefaultOverlay(group);
 
     private static bool ShouldShowDivisionSeparatorCheckbox(DtrOverlayGroup group) =>
-        DtrOverlayGroups.IsDefaultGroup(group)
-        && (C.FollowVanillaDtr || !DtrOverlayGroups.IsSplitNativeMode());
+        DtrOverlayGroups.IsDefaultOverlay(group)
+        && (C.FollowNativeDtr || !DtrOverlayGroups.IsSplitNativeMode());
 
     private static void DrawStyleColorRows(IEnumerable<StyleColorRow> rows)
     {
@@ -35,7 +35,7 @@ public static partial class SettingsTab
             return;
         }
 
-        if (DtrOverlayGroups.IsMergedDefaultPanelGroup(group))
+        if (DtrOverlayGroups.IsMergedDefaultPanelOverlay(group))
         {
             var divisionEnabled = OverlayStyleKeys.IsOverrideStyleDivisionColorRowEnabled(group);
             DrawStyleColorRows(

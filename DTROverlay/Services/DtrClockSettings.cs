@@ -12,7 +12,7 @@ internal readonly record struct DtrClockSettings(
 
     private static bool IsEnabled(UiConfigOption option)
     {
-        if (Svc.GameConfig.TryGet(option, out uint value))
+        if (PluginServices.GameConfig.TryGet(option, out uint value))
             return value != 0;
 
         return true;
