@@ -11,6 +11,7 @@ public sealed class Configuration
 {
     public int ConfigVersion = ConfigV2Migrator.CurrentVersion;
     public bool OverlayEnabled = true;
+    public string UiLanguage = I18n.FollowClient;
     public bool FollowNativeDtr;
     public bool SplitNativeDtr = true;
     public FollowNativeDtrSide FollowNativeDtrSide = FollowNativeDtrSide.Left;

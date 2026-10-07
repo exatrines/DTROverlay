@@ -4,14 +4,20 @@ namespace DTROverlay.UI;
 
 public static partial class SettingsTab
 {
-    private static readonly string[] LayoutModeLabels = ["Horizontal", "Vertical"];
-    private static readonly string[] FollowVanillaSideLabels = ["Left side", "Right side"];
-    private static readonly string[] HorizontalFlowLabels = ["Left to right", "Right to left"];
-    private static readonly string[] VerticalFlowLabels = ["Top to bottom", "Bottom to top"];
-    private static readonly string[] VerticalAlignmentLabels = ["Left align", "Right align"];
-    private static readonly string[] ServerInfoModeLabels = ["Icon mode", "Text mode"];
-    private static readonly string[] OverlayOriginLabels = ["Top left", "Top right", "Bottom left", "Bottom right"];
-    private static readonly string[] TooltipPositionLabels = ["Follow cursor", "Upper", "Lower"];
+    private static string[] LayoutModeLabels() => [I18n.Get("layout.horizontal"), I18n.Get("layout.vertical")];
+    private static string[] FollowVanillaSideLabels() => [I18n.Get("layout.side.left"), I18n.Get("layout.side.right")];
+    private static string[] HorizontalFlowLabels() => [I18n.Get("layout.ltr"), I18n.Get("layout.rtl")];
+    private static string[] VerticalFlowLabels() => [I18n.Get("layout.ttb"), I18n.Get("layout.btt")];
+    private static string[] VerticalAlignmentLabels() => [I18n.Get("layout.align_left"), I18n.Get("layout.align_right")];
+    private static string[] ServerInfoModeLabels() => [I18n.Get("server.icon"), I18n.Get("server.text")];
+    private static string[] OverlayOriginLabels() =>
+    [
+        I18n.Get("position.top_left"),
+        I18n.Get("position.top_right"),
+        I18n.Get("position.bottom_left"),
+        I18n.Get("position.bottom_right"),
+    ];
+    private static string[] TooltipPositionLabels() => [I18n.Get("tooltip.follow"), I18n.Get("tooltip.upper"), I18n.Get("tooltip.lower")];
 
     public static void DrawStylePage()
     {
@@ -134,7 +140,7 @@ public static partial class SettingsTab
             onEnabledChanged?.Invoke();
         }
 
-        MirageUi.Tooltip("Override the default setting.");
+        MirageUi.Tooltip(I18n.Get("style.override_hint"));
 
         ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
         var controlWidth = MathF.Max(48f, ImGui.GetContentRegionAvail().X);

@@ -2,7 +2,7 @@ namespace DTROverlay;
 
 internal static class PluginCommands
 {
-    private const string Usage = "/dtroverlay — toggle the overlay editor";
+    private static string Usage => I18n.Get("command.usage");
 
     public static void Handle(string command, string args)
     {

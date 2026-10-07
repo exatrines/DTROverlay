@@ -36,6 +36,7 @@ internal sealed class SettingsWindow : Window
 
     public override void PreDraw()
     {
+        WindowName = I18n.Get("window.settings");
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
         MirageTheme.EnsureDefaultsCaptured();
         _themeScope = MirageTheme.PushCustom(MirageTheme.ResolveAppliedColors());
@@ -67,14 +68,14 @@ internal sealed class SettingsWindow : Window
             ShowSidebarHeader = false,
             ShowSidebarFooter = false,
             ShowSearch = true,
-            SearchHint = "Search…",
+            SearchHint = I18n.Get("sidebar.search"),
             SearchFilter = _sidebarSearch,
             AllowDeselect = false,
             Entries =
             [
-                new MirageTwoColumnEntry { Id = PageFollowVanilla, Label = "Mode" },
-                new MirageTwoColumnEntry { Id = PageStyle, Label = "Default Style" },
-                new MirageTwoColumnEntry { Id = PageOptions, Label = "Options" },
+                new MirageTwoColumnEntry { Id = PageFollowVanilla, Label = I18n.Get("page.mode") },
+                new MirageTwoColumnEntry { Id = PageStyle, Label = I18n.Get("page.style") },
+                new MirageTwoColumnEntry { Id = PageOptions, Label = I18n.Get("page.options") },
             ],
             SelectedId = _selectedId,
             OnSelectionChanged = id =>

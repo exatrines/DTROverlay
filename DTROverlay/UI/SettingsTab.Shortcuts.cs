@@ -6,26 +6,50 @@ public static partial class SettingsTab
 {
     private static void DrawShortcutsSection()
     {
-        MirageUi.SubHeader("Shortcuts");
+        MirageUi.SubHeader(I18n.Get("shortcuts.header"));
 
-        if (MirageUi.SecondaryButton("Toggle vanilla DTR bar", id: "toggleVanillaDtr"))
+        if (MirageUi.SecondaryButton(I18n.Get("shortcuts.vanilla"), id: "toggleVanillaDtr"))
             VanillaDtrHud.Toggle();
-        MirageUi.Tooltip(
-            "Runs /hud dtr to show or hide the game's Server Info Bar. "
-            + "Avoid while Follow native DTR is selected.");
+        MirageUi.Tooltip(I18n.Get("shortcuts.vanilla_hint"));
 
-        if (MirageUi.SecondaryButton("Uncheck all in Dalamud DTR settings", id: "hideDalamudDtr"))
+        if (MirageUi.SecondaryButton(I18n.Get("shortcuts.dalamud"), id: "hideDalamudDtr"))
             DtrDalamudConfig.HideAllEntriesInDalamudSettings();
-        MirageUi.Tooltip(
-            "Disables every plugin DTR entry in Dalamud's general settings "
-            + "(XIVLauncher → Dalamud Settings → Server Info Bar). "
-            + "Use this so only the overlay shows plugin DTR text.");
+        MirageUi.Tooltip(I18n.Get("shortcuts.dalamud_hint"));
     }
 
     private static void DrawOptionSection()
     {
-        MirageUi.SubHeader("Option");
-        if (MirageUi.Checkbox("Open plugin UI on middle-click", ref C.OpenPluginUiOnMiddleClick))
+        MirageUi.SubHeader(I18n.Get("option.header"));
+        DrawLanguageSetting();
+
+        if (MirageUi.Checkbox(I18n.Get("option.middle_click"), ref C.OpenPluginUiOnMiddleClick))
             C.Save();
+    }
+
+    private static void DrawLanguageSetting()
+    {
+        var current = C.UiLanguage is "en" or "ja" ? C.UiLanguage : I18n.FollowClient;
+        string[] codes = [I18n.FollowClient, "en", "ja"];
+        string[] labels =
+        [
+            I18n.Get("option.language.client"),
+            I18n.Get("option.language.en"),
+            I18n.Get("option.language.ja"),
+        ];
+        var index = Array.IndexOf(codes, current);
+        if (index < 0)
+            index = 0;
+
+        var selected = labels[index];
+        if (!MirageUi.Dropdown(I18n.Get("option.language"), ref selected, labels, allowClear: false, id: "uiLanguage"))
+            return;
+
+        var next = Array.IndexOf(labels, selected);
+        if (next < 0 || codes[next] == current)
+            return;
+
+        C.UiLanguage = codes[next];
+        C.Save();
+        I18n.Apply();
     }
 }

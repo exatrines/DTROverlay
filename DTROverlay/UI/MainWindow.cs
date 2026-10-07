@@ -37,6 +37,7 @@ internal sealed class MainWindow : Window
 
     public override void PreDraw()
     {
+        WindowName = I18n.Get("window.main");
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
         MirageTheme.EnsureDefaultsCaptured();
         _themeScope = MirageTheme.PushCustom(MirageTheme.ResolveAppliedColors());
@@ -66,7 +67,7 @@ internal sealed class MainWindow : Window
             ShowSidebarHeader = true,
             ShowSidebarFooter = false,
             ShowSearch = true,
-            SearchHint = "Search…",
+            SearchHint = I18n.Get("sidebar.search"),
             SearchFilter = _sidebarSearch,
             AllowDeselect = false,
             SidebarHeader = new MirageTwoColumnSidebarHeader
@@ -82,7 +83,7 @@ internal sealed class MainWindow : Window
                     {
                         Id = "settings",
                         Icon = FontAwesomeIcon.Cog,
-                        Tooltip = "Settings",
+                        Tooltip = I18n.Get("sidebar.settings"),
                         OnClick = _toggleSettings,
                     },
                 ],
@@ -93,14 +94,14 @@ internal sealed class MainWindow : Window
                 {
                     Id = "add",
                     Icon = FontAwesomeIcon.Plus,
-                    Tooltip = "Add overlay",
+                    Tooltip = I18n.Get("overlay.add"),
                     OnClick = () => DtrOverlayGroups.TryAddOverlay(),
                 },
                 new MirageTwoColumnTrailingAction
                 {
                     Id = "delete",
                     Icon = FontAwesomeIcon.Trash,
-                    Tooltip = canDelete ? "Delete selected overlay" : "Default and Native cannot be deleted",
+                    Tooltip = canDelete ? I18n.Get("overlay.delete") : I18n.Get("overlay.delete_locked"),
                     OnClick = () =>
                     {
                         if (canDelete)

@@ -46,6 +46,7 @@ public sealed class Plugin : IDalamudPlugin
             chatGui);
 
         C = Configuration.Load(pluginInterface);
+        I18n.Init(pluginInterface);
         MigrateConfiguration(C);
         C.ThemeColors ??= MirageColorSettings.CreateDefault();
         DtrOverlayGroups.EnsureInitialized();
@@ -71,7 +72,18 @@ public sealed class Plugin : IDalamudPlugin
 
         commandManager.AddHandler("/dtroverlay", new CommandInfo(PluginCommands.Handle)
         {
-            HelpMessage = "Toggle the overlay editor. Settings open from the gear icon.",
+            HelpMessage = I18n.Get("command.help"),
+        });
+        I18n.Reloaded += RefreshCommandHelp;
+    }
+
+    private static void RefreshCommandHelp()
+    {
+        var commands = PluginServices.CommandManager;
+        commands.RemoveHandler("/dtroverlay");
+        commands.AddHandler("/dtroverlay", new CommandInfo(PluginCommands.Handle)
+        {
+            HelpMessage = I18n.Get("command.help"),
         });
     }
 
@@ -101,7 +113,9 @@ public sealed class Plugin : IDalamudPlugin
         PluginServices.PluginInterface.UiBuilder.Draw -= DrawUi;
         PluginServices.PluginInterface.UiBuilder.OpenConfigUi -= ToggleSettings;
         PluginServices.PluginInterface.UiBuilder.OpenMainUi -= ToggleMain;
+        I18n.Reloaded -= RefreshCommandHelp;
         PluginServices.CommandManager.RemoveHandler("/dtroverlay");
+        I18n.Dispose();
         DtrNativePluginHider.Unregister();
         DtrOverlayFonts.Dispose();
         MirageUi.Dispose();

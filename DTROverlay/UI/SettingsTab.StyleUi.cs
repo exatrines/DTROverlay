@@ -25,10 +25,10 @@ public static partial class SettingsTab
         {
             DrawStyleColorRows(
             [
-                new("Text", GroupStyleKeys.OverrideText(group.Id), "overrideText"),
-                new("Separator", GroupStyleKeys.OverrideSeparator(group.Id), "overrideSeparator"),
+                new(I18n.Get("style.text"), GroupStyleKeys.OverrideText(group.Id), "overrideText"),
+                new(I18n.Get("style.separator"), GroupStyleKeys.OverrideSeparator(group.Id), "overrideSeparator"),
                 new(
-                    "Division separator",
+                    I18n.Get("style.division_separator"),
                     OverlayEntryIds.DivisionSeparatorColor,
                     "overrideDivisionSeparator"),
             ]);
@@ -40,12 +40,12 @@ public static partial class SettingsTab
             var divisionEnabled = OverlayStyleKeys.IsOverrideStyleDivisionColorRowEnabled(group);
             DrawStyleColorRows(
             [
-                new("Plugin text", GroupStyleKeys.OverrideText(group.Id), "overridePluginText"),
-                new("Plugin separator", GroupStyleKeys.OverrideSeparator(group.Id), "overridePluginSeparator"),
-                new("Native text", GroupStyleKeys.OverrideNativeText(group.Id), "overrideNativeText"),
-                new("Native separator", GroupStyleKeys.OverrideNativeSeparator(group.Id), "overrideNativeSeparator"),
+                new(I18n.Get("style.plugin_text"), GroupStyleKeys.OverrideText(group.Id), "overridePluginText"),
+                new(I18n.Get("style.plugin_separator"), GroupStyleKeys.OverrideSeparator(group.Id), "overridePluginSeparator"),
+                new(I18n.Get("style.native_text"), GroupStyleKeys.OverrideNativeText(group.Id), "overrideNativeText"),
+                new(I18n.Get("style.native_separator"), GroupStyleKeys.OverrideNativeSeparator(group.Id), "overrideNativeSeparator"),
                 new(
-                    "Division separator",
+                    I18n.Get("style.division_separator"),
                     GroupStyleKeys.OverrideDivisionSeparator(group.Id),
                     "overrideDivisionSeparator",
                     divisionEnabled),
@@ -55,8 +55,8 @@ public static partial class SettingsTab
 
         DrawStyleColorRows(
         [
-            new("Text", GroupStyleKeys.OverrideText(group.Id), "overrideText"),
-            new("Separator", GroupStyleKeys.OverrideSeparator(group.Id), "overrideSeparator"),
+            new(I18n.Get("style.text"), GroupStyleKeys.OverrideText(group.Id), "overrideText"),
+            new(I18n.Get("style.separator"), GroupStyleKeys.OverrideSeparator(group.Id), "overrideSeparator"),
         ]);
     }
 }

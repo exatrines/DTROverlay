@@ -9,7 +9,7 @@ public static partial class SettingsTab
 
     private static void DrawEntriesSection(DtrOverlayGroup group)
     {
-        MirageUi.SubHeader("DTR entries");
+        MirageUi.SubHeader(I18n.Get("entries.header"));
 
         DrawPluginAddControl(group);
         DrawDtrEntryTable(group);
@@ -19,13 +19,13 @@ public static partial class SettingsTab
     {
         var available = DtrOverlayGroups.GetAvailablePluginTitles(group);
         if (MirageUi.Dropdown(
-                "Add plugin",
+                I18n.Get("entries.add"),
                 ref _addPluginChoice,
                 available,
-                "Add plugin...",
+                I18n.Get("entries.add_placeholder"),
                 "addPlugin",
                 allowClear: false,
-                emptyMessage: "No plugins available"))
+                emptyMessage: I18n.Get("entries.empty")))
         {
             if (string.IsNullOrEmpty(_addPluginChoice))
                 return;
@@ -39,7 +39,17 @@ public static partial class SettingsTab
     {
         DtrOverlayGroups.SyncOverlayOrder(group);
 
-        if (!SettingsTables.BeginDefaultTable("##dtrEntries", ["^", "", "Plugin", "prefix / suffix", "Min Width", "Text", "Edge", "Shadow", ""]))
+        if (!SettingsTables.BeginDefaultTable("##dtrEntries", [
+                "^",
+                "",
+                "~" + I18n.Get("entries.plugin"),
+                I18n.Get("entries.affix"),
+                I18n.Get("entries.min_width"),
+                I18n.Get("style.column.text"),
+                I18n.Get("style.column.edge"),
+                I18n.Get("style.column.shadow"),
+                "",
+            ]))
             return;
 
         var pluginIds = DtrEntryOrder.GetOrderedPluginIdsForDisplay(group);
@@ -93,7 +103,7 @@ public static partial class SettingsTab
         using (MirageUi.DisabledIf(!showInOverlay))
         {
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(entry.Title);
+            DrawPluginName(entry.Title);
 
             ImGui.TableNextColumn();
             DrawPluginAffixControls(group, entry.Title);
@@ -113,8 +123,33 @@ public static partial class SettingsTab
         }
 
         ImGui.TableNextColumn();
-        if (MirageUi.IconButton(FontAwesomeIcon.Trash, $"remove_{id}", iconSize, tooltip: "Remove from overlay"))
+        if (MirageUi.IconButton(FontAwesomeIcon.Trash, $"remove_{id}", iconSize, tooltip: I18n.Get("entries.remove")))
             DtrOverlayGroups.RemovePlugin(group, id);
+    }
+
+    private static void DrawPluginName(string title)
+    {
+        var shown = FitText(title, ImGui.GetContentRegionAvail().X);
+        ImGui.TextUnformatted(shown);
+        if (!string.Equals(shown, title, StringComparison.Ordinal))
+            MirageUi.Tooltip(title);
+    }
+
+    private static string FitText(string text, float avail)
+    {
+        if (avail <= 0f || ImGui.CalcTextSize(text).X <= avail)
+            return text;
+
+        const string ellipsis = "…";
+        var budget = avail - ImGui.CalcTextSize(ellipsis).X;
+        if (budget <= 0f)
+            return ellipsis;
+
+        var count = text.Length;
+        while (count > 0 && ImGui.CalcTextSize(text[..count]).X > budget)
+            count--;
+
+        return count == 0 ? ellipsis : text[..count] + ellipsis;
     }
 
     private static void DrawPluginAffixControls(DtrOverlayGroup group, string entryTitle)
@@ -126,7 +161,7 @@ public static partial class SettingsTab
             ref affixes.Prefix,
             128,
             $"prefix_{entryTitle}",
-            "prefix",
+            I18n.Get("entries.prefix"),
             88f);
 
         ImGui.SameLine();
@@ -138,7 +173,7 @@ public static partial class SettingsTab
             ref affixes.Suffix,
             128,
             $"suffix_{entryTitle}",
-            "suffix",
+            I18n.Get("entries.suffix"),
             88f);
 
         if (!prefixChanged && !suffixChanged)
@@ -155,9 +190,10 @@ public static partial class SettingsTab
             using (MirageUi.DisabledIf(true))
                 ImGui.TextUnformatted(entry.MinimumWidth.ToString());
 
-            MirageUi.Tooltip(
-                $"Plugin DTR MinimumWidth ({entry.MinimumWidth} px). "
-                + $"Overlay uses {DtrEntrySlotWidth.GetScaledFixedWidth(entry):0.##} px after font scale.");
+            MirageUi.Tooltip(I18n.Format(
+                "entries.min_width_plugin",
+                entry.MinimumWidth,
+                DtrEntrySlotWidth.GetScaledFixedWidth(entry).ToString("0.##")));
             return;
         }
 
@@ -170,14 +206,14 @@ public static partial class SettingsTab
 
         if (overlayMin > 0)
         {
-            MirageUi.Tooltip(
-                $"Fixed overlay slot: {overlayMin} px × font scale "
-                + $"({DtrEntrySlotWidth.GetScaledFixedWidth(entry):0.##} px). "
-                + "0 = follow measured text width.");
+            MirageUi.Tooltip(I18n.Format(
+                "entries.slot_fixed",
+                overlayMin,
+                DtrEntrySlotWidth.GetScaledFixedWidth(entry).ToString("0.##")));
         }
         else
         {
-            MirageUi.Tooltip("Minimum overlay slot width (0–1000 px). 0 follows measured text (may flicker).");
+            MirageUi.Tooltip(I18n.Get("entries.slot_auto"));
         }
     }
 }

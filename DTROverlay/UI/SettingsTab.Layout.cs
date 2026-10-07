@@ -39,11 +39,11 @@ public static partial class SettingsTab
 
     public static void DrawGroupSeparatorSettings(DtrOverlayGroup group)
     {
-        MirageUi.SubHeader("Separator", pushDown: false);
+        MirageUi.SubHeader(I18n.Get("layout.separator"), pushDown: false);
 
         if (!DtrOverlayGroups.IsNativeOverlay(group))
         {
-            if (MirageUi.Checkbox("Show plugin separator bars", ref group.ShowPluginEntrySeparators))
+            if (MirageUi.Checkbox(I18n.Get("layout.plugin_bars"), ref group.ShowPluginEntrySeparators))
                 C.Save();
 
             if (ShouldShowDivisionSeparatorCheckbox(group))
@@ -61,23 +61,23 @@ public static partial class SettingsTab
             return;
 
         var native = DtrOverlayGroups.IsNativeOverlay(group) ? group : DtrOverlayGroups.GetNativeOverlay();
-        if (MirageUi.Checkbox("Show native separator bars", ref native.ShowNativeEntrySeparators))
+        if (MirageUi.Checkbox(I18n.Get("layout.native_bars"), ref native.ShowNativeEntrySeparators))
             C.Save();
 
         if (!DtrOverlayGroups.IsNativeOverlay(group))
-            MirageUi.Tooltip("Stored on the Native overlay.");
+            MirageUi.Tooltip(I18n.Get("layout.native_stored"));
     }
 
     public static void DrawGroupLayoutSection(DtrOverlayGroup group)
     {
-        MirageUi.SubHeader("Layout");
+        MirageUi.SubHeader(I18n.Get("layout.header"));
         DrawGroupLayoutContent(group);
     }
 
     private static void DrawGroupLayoutContent(DtrOverlayGroup group)
     {
         var layoutMode = group.LayoutMode;
-        if (DrawEnumDropdown("Line direction", ref layoutMode, LayoutModeLabels, $"layoutMode_{group.Id}"))
+        if (DrawEnumDropdown(I18n.Get("layout.line"), ref layoutMode, LayoutModeLabels(), $"layoutMode_{group.Id}"))
         {
             group.LayoutMode = layoutMode;
             C.Save();
@@ -90,24 +90,24 @@ public static partial class SettingsTab
     private static void DrawFollowNativeLayoutSettings()
     {
         var side = C.FollowNativeDtrSide;
-        if (DrawEnumDropdown("Overlay relative position", ref side, FollowVanillaSideLabels, "followVanillaSide"))
+        if (DrawEnumDropdown(I18n.Get("layout.position"), ref side, FollowVanillaSideLabels(), "followVanillaSide"))
         {
             C.FollowNativeDtrSide = side;
             C.Save();
         }
 
-        if (MirageUi.SliderFloat("X Offset", ref C.FollowNativeHorizontalOffset, -100f, 100f, "%.1f", "followVanillaX"))
+        if (MirageUi.SliderFloat(I18n.Get("layout.x"), ref C.FollowNativeHorizontalOffset, -100f, 100f, "%.1f", "followVanillaX"))
             C.Save();
 
-        if (MirageUi.SliderFloat("Y Offset", ref C.FollowNativeVerticalOffset, -30f, 30f, "%.1f", "followVanillaY"))
+        if (MirageUi.SliderFloat(I18n.Get("layout.y"), ref C.FollowNativeVerticalOffset, -30f, 30f, "%.1f", "followVanillaY"))
             C.Save();
 
-        DrawOverlayFontScale("Font Size Scale", ref C.FollowNativeFontSizeScale, "followVanillaFontScale");
+        DrawOverlayFontScale(I18n.Get("layout.font_scale"), ref C.FollowNativeFontSizeScale, "followVanillaFontScale");
     }
 
     private static void DrawDivisionSeparatorCheckbox(DtrOverlayGroup group)
     {
-        if (MirageUi.Checkbox("Show division separator", ref group.ShowDivisionSeparatorBar))
+        if (MirageUi.Checkbox(I18n.Get("layout.division"), ref group.ShowDivisionSeparatorBar))
             C.Save();
     }
 
@@ -122,7 +122,7 @@ public static partial class SettingsTab
     private static void DrawHorizontalPluginFlow(DtrOverlayGroup group)
     {
         var flow = group.HorizontalPluginFlow;
-        if (!DrawEnumDropdown("Plugin order", ref flow, HorizontalFlowLabels, $"hFlow_{group.Id}"))
+        if (!DrawEnumDropdown(I18n.Get("layout.order"), ref flow, HorizontalFlowLabels(), $"hFlow_{group.Id}"))
             return;
 
         group.HorizontalPluginFlow = flow;
@@ -132,14 +132,14 @@ public static partial class SettingsTab
     private static void DrawVerticalPluginFlow(DtrOverlayGroup group)
     {
         var verticalFlow = group.VerticalPluginFlow;
-        if (DrawEnumDropdown("Plugin order", ref verticalFlow, VerticalFlowLabels, $"vFlow_{group.Id}"))
+        if (DrawEnumDropdown(I18n.Get("layout.order"), ref verticalFlow, VerticalFlowLabels(), $"vFlow_{group.Id}"))
         {
             group.VerticalPluginFlow = verticalFlow;
             C.Save();
         }
 
         var alignment = group.VerticalAlignment;
-        if (!DrawEnumDropdown("Plugin alignment", ref alignment, VerticalAlignmentLabels, $"vAlign_{group.Id}"))
+        if (!DrawEnumDropdown(I18n.Get("layout.align"), ref alignment, VerticalAlignmentLabels(), $"vAlign_{group.Id}"))
             return;
 
         group.VerticalAlignment = alignment;

@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.1.0.0] — 2026-10-07
+
+### Added
+
+- English and Japanese UI. The language follows Dalamud, or can be chosen under Options.
+- Settings page names stay in English.
+
+### Fixed
+
+- The DTR entries table no longer clips its right side when a plugin name is long. The name column shrinks, and long names are abbreviated.
+
 ## [2.0.0.0] — 2026-09-25
 
 ### Added
@@ -122,4 +133,5 @@
 - ネイティブグループ（ワールド・接続・時計）の表示とスタイル
 - 設定 UI（General / Settings）、ショートカット（バニラ DTR / Dalamud DTR 一括無効化）
 
+[2.1.0.0]: https://github.com/exatrines/DTROverlay/compare/v2.0.0.0...v2.1.0.0
 [2.0.0.0]: https://github.com/exatrines/DTROverlay/compare/v1.2.0.5...v2.0.0.0

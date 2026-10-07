@@ -4,7 +4,7 @@
 
     <PropertyGroup>
         <Authors>exatrines</Authors>
-        <Version>2.0.0.0</Version>
+        <Version>2.1.0.0</Version>
         <Description>ImGui overlay for Server Info Bar entries</Description>
         <PackageProjectUrl>https://github.com/exatrines/DTROverlay</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
@@ -66,6 +66,12 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Update="Data\plugin-icon.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Data\I18n\en.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Data\I18n\ja.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>

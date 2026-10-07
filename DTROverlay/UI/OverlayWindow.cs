@@ -175,7 +175,7 @@ public sealed class OverlayWindow : Window
     private static void DrawEditModePlaceholder()
     {
         using var fontPush = DtrOverlayFonts.PushActive();
-        ImGui.TextUnformatted("Edit Mode");
+        ImGui.TextUnformatted(I18n.Get("edit.placeholder"));
     }
 
     private static void HandleEditModeDrag(DtrOverlayGroup group)

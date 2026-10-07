@@ -6,25 +6,25 @@ public static partial class SettingsTab
 {
     public static void DrawModePage()
     {
-        MirageUi.SubHeader("Mode");
+        MirageUi.SubHeader(I18n.Get("page.mode"));
 
         var followNative = C.FollowNativeDtr;
-        if (ImGui.RadioButton("Follow native DTR", followNative))
+        if (ImGui.RadioButton(I18n.Get("mode.follow"), followNative))
             SetFollowNativeMode(true);
-        if (ImGui.RadioButton("Manual", !followNative))
+        if (ImGui.RadioButton(I18n.Get("mode.manual"), !followNative))
             SetFollowNativeMode(false);
 
         if (followNative)
         {
             FollowNativeDtrMode.EnforceLayoutConstraints();
-            MirageUi.SubHeader("Follow native DTR settings");
+            MirageUi.SubHeader(I18n.Get("mode.follow_settings"));
             DrawFollowNativeLayoutSettings();
             DrawHorizontalPluginFlow(DtrOverlayGroups.GetDefaultOverlay());
             return;
         }
 
-        MirageUi.SubHeader("Manual settings");
-        if (MirageUi.Checkbox("Split Native DTR", ref C.SplitNativeDtr))
+        MirageUi.SubHeader(I18n.Get("mode.manual_settings"));
+        if (MirageUi.Checkbox(I18n.Get("mode.split"), ref C.SplitNativeDtr))
         {
             DtrOverlayGroups.SyncDefaultOverlayDisplayName();
 

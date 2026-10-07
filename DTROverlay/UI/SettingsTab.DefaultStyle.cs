@@ -6,12 +6,12 @@ public static partial class SettingsTab
 {
     private static void DrawDefaultStyleSection()
     {
-        MirageUi.SubHeader("Default Style");
+        MirageUi.SubHeader(I18n.Get("style.default"));
 
         using (MirageUi.DisabledIf(C.FollowNativeDtr))
-            DrawOverlayFontScale("Font Size Scale", ref C.OverlayFontSizeScale, "defaultOverlayFontSizeScale");
+            DrawOverlayFontScale(I18n.Get("layout.font_scale"), ref C.OverlayFontSizeScale, "defaultOverlayFontSizeScale");
         if (C.FollowNativeDtr)
-            TooltipWhenDisabled("Follow native DTR uses its own Font Size Scale.");
+            TooltipWhenDisabled(I18n.Get("layout.font_scale_follow"));
 
         DrawDefaultSeparatorWidthSetting();
         DrawDefaultStyleColorTable();
@@ -20,7 +20,7 @@ public static partial class SettingsTab
     private static void DrawDefaultSeparatorWidthSetting()
     {
         var width = C.SeparatorSlotWidthPx;
-        if (!MirageUi.SliderInt("Separator width", ref width, 0, OverlaySlotWidthSettings.MaxWidth, "defaultSeparatorSlotWidth"))
+        if (!MirageUi.SliderInt(I18n.Get("style.separator_width"), ref width, 0, OverlaySlotWidthSettings.MaxWidth, "defaultSeparatorSlotWidth"))
             return;
 
         C.SeparatorSlotWidthPx = width;
@@ -29,7 +29,7 @@ public static partial class SettingsTab
 
     private static void DrawDefaultStyleColorTable()
     {
-        MirageUi.Text("Font Colors", MirageUi.Color.Secondary);
+        MirageUi.Text(I18n.Get("style.colors"), MirageUi.Color.Secondary);
 
         var defaultGroup = DtrOverlayGroups.GetDefaultOverlay();
         var divisionRowEnabled = OverlayStyleKeys.IsDefaultStyleDivisionColorRowEnabled(defaultGroup);
@@ -37,10 +37,10 @@ public static partial class SettingsTab
         if (!BeginFontColorStyleTable("##defaultStyleColors"))
             return;
 
-        DrawStyleHierarchyColorRow("Text", OverlayEntryIds.DefaultText, "defaultText");
-        DrawStyleHierarchyColorRow("Separator", OverlayEntryIds.DefaultSeparator, "defaultSeparator");
+        DrawStyleHierarchyColorRow(I18n.Get("style.text"), OverlayEntryIds.DefaultText, "defaultText");
+        DrawStyleHierarchyColorRow(I18n.Get("style.separator"), OverlayEntryIds.DefaultSeparator, "defaultSeparator");
         DrawStyleHierarchyColorRow(
-            "Division",
+            I18n.Get("style.division"),
             OverlayEntryIds.DivisionSeparatorColor,
             "divisionSep",
             divisionRowEnabled);
@@ -49,7 +49,12 @@ public static partial class SettingsTab
     }
 
     private static bool BeginFontColorStyleTable(string id) =>
-        SettingsTables.BeginDefaultTable(id, ["Label", "Text", "Edge", "Shadow"]);
+        SettingsTables.BeginDefaultTable(id, [
+            I18n.Get("style.column.label"),
+            I18n.Get("style.column.text"),
+            I18n.Get("style.column.edge"),
+            I18n.Get("style.column.shadow"),
+        ]);
 
     private static void DrawStyleHierarchyColorRow(
         string label,

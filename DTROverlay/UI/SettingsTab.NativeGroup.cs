@@ -7,9 +7,9 @@ public static partial class SettingsTab
 {
     private static void DrawPositionSection(DtrOverlayGroup group)
     {
-        MirageUi.SubHeader("Position");
+        MirageUi.SubHeader(I18n.Get("position.header"));
 
-        if (MirageUi.Checkbox("Edit mode", ref group.OverlayEditMode))
+        if (MirageUi.Checkbox(I18n.Get("position.edit"), ref group.OverlayEditMode))
         {
             if (group.OverlayEditMode)
             {
@@ -23,7 +23,7 @@ public static partial class SettingsTab
             C.Save();
         }
 
-        MirageUi.Tooltip("Drag the overlay in-game while enabled.");
+        MirageUi.Tooltip(I18n.Get("position.edit_hint"));
 
         DrawOverlayPositionOriginSettings(group);
 
@@ -47,9 +47,9 @@ public static partial class SettingsTab
     {
         var group = GetServerInfoSettingsGroup(panelGroup);
 
-        MirageUi.SubHeader("Native Overlay");
+        MirageUi.SubHeader(I18n.Get("native.header"));
         if (panelGroup.Id != group.Id)
-            MirageUi.Tooltip("Server info is stored on the Native overlay.");
+            MirageUi.Tooltip(I18n.Get("native.stored"));
 
         DrawServerInfoDisplayModeSettings(group);
         DrawServerInfoPartSettings(group);
@@ -58,7 +58,7 @@ public static partial class SettingsTab
     private static void DrawServerInfoDisplayModeSettings(DtrOverlayGroup group)
     {
         var displayMode = group.ServerInfoDisplayMode;
-        if (!DrawEnumDropdown("Mode", ref displayMode, ServerInfoModeLabels, $"serverInfoMode_{group.Id}"))
+        if (!DrawEnumDropdown(I18n.Get("native.mode"), ref displayMode, ServerInfoModeLabels(), $"serverInfoMode_{group.Id}"))
             return;
 
         group.ServerInfoDisplayMode = displayMode;
@@ -67,7 +67,7 @@ public static partial class SettingsTab
 
     private static void DrawServerInfoPartSettings(DtrOverlayGroup group)
     {
-        MirageUi.Text("Enable display parts", MirageUi.Color.Secondary);
+        MirageUi.Text(I18n.Get("native.parts"), MirageUi.Color.Secondary);
 
         foreach (var partId in OverlayEntryIds.ServerInfoParts)
         {
@@ -88,12 +88,10 @@ public static partial class SettingsTab
     {
         var previousOrigin = group.OverlayPositionOrigin;
         var origin = group.OverlayPositionOrigin;
-        if (DrawEnumDropdown("Overlay origin", ref origin, OverlayOriginLabels, $"overlayOrigin_{group.Id}"))
+        if (DrawEnumDropdown(I18n.Get("position.origin"), ref origin, OverlayOriginLabels(), $"overlayOrigin_{group.Id}"))
             group.OverlayPositionOrigin = origin;
 
-        MirageUi.Tooltip(
-            "Top origins: X/Y offset from the top edge. "
-            + "Bottom origins: X/Y offset from the bottom edge.");
+        MirageUi.Tooltip(I18n.Get("position.origin_hint"));
 
         if (group.OverlayPositionOrigin == previousOrigin)
             return;

@@ -399,12 +399,12 @@ internal static class OverlayEntryIds
 
     public static string GetPartDisplayName(string partId) => partId switch
     {
-        WorldIcon => "Travel status",
-        WorldName => "World name",
-        WalkMode => "Walk mode",
-        Network => "Network strength",
-        LocalClock => "Local time (LT)",
-        EorzeaClock => "Eorzea time (ET)",
+        WorldIcon => I18n.Get("part.travel"),
+        WorldName => I18n.Get("part.world"),
+        WalkMode => I18n.Get("part.walk"),
+        Network => I18n.Get("part.network"),
+        LocalClock => I18n.Get("part.lt"),
+        EorzeaClock => I18n.Get("part.et"),
         _ => partId,
     };
 }

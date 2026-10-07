@@ -24,7 +24,7 @@ https://raw.githubusercontent.com/exatrines/DalamudPlugins/refs/heads/main/plugi
 - **Split Native DTR** — Manual のとき、サーバー情報を別のオーバーレイに出す
 - **DTR entries** — 並び、表示、接頭・接尾、最小幅、プラグインごとの色
 - **スタイル** — 既定の文字、区切り、ツールチップ。オーバーレイごとに上書きできる
-- **ショートカット** — ゲームのバーや Dalamud 側の DTR 行を隠し、中クリックでプラグイン UI を開く
+- **ショートカット** — ゲームのバーや Dalamud 側の DTR 行を隠し、中央クリックでプラグイン UI を開く
 
 ## コマンド
 

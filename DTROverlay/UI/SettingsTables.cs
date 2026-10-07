@@ -10,7 +10,10 @@ internal static class SettingsTables
 
     public static bool BeginDefaultTable(string id, string[] headers)
     {
-        if (!ImGui.BeginTable(id, headers.Length, DefaultFlags))
+        var outer = RequestsStretch(headers)
+            ? new Vector2(MathF.Max(1f, ImGui.GetContentRegionAvail().X), 0f)
+            : default;
+        if (!ImGui.BeginTable(id, headers.Length, DefaultFlags, outer))
             return false;
 
         foreach (var header in headers)
@@ -31,5 +34,19 @@ internal static class SettingsTables
 
         ImGui.TableHeadersRow();
         return true;
+    }
+
+    private static bool RequestsStretch(string[] headers)
+    {
+        foreach (var header in headers)
+        {
+            for (var i = 0; i < header.Length && header[i] is '~' or '^'; i++)
+            {
+                if (header[i] == '~')
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -40,7 +40,7 @@ internal static class OverlayColorPicker
                 if (MirageUi.ColorEdit4("", ref edgeColor, DtrStyle.ColorEditFlags, $"edge_{idPrefix}", 36f)
                     && edgeStyleEnabled)
                     SaveEdgeColor(layoutKey, edgeColor);
-                MirageUi.Tooltip("SeString edge (outline) color.");
+                MirageUi.Tooltip(I18n.Get("style.edge_color"));
 
                 ImGui.SameLine();
                 var edgeStrength = EntryFixedWidth.GetStoredEdgeStrength(layoutKey);
@@ -101,32 +101,39 @@ internal static class OverlayColorPicker
                 if (MirageUi.SliderFloat("", ref strength, 0f, DtrStyle.MaxEdgeStrength, "%.2f", $"edgeStr_{idPrefix}", 48f)
                     && effectEnabled)
                     SaveEdgeStrength(layoutKey, strength);
-                MirageUi.Tooltip("Edge strength (0–1).");
+                MirageUi.Tooltip(I18n.Get("style.edge_strength"));
             }
             else
             {
                 if (MirageUi.SliderFloat("", ref strength, 0f, DtrStyle.MaxShadowThickness, "%.1f", $"shadowStr_{idPrefix}", 48f)
                     && effectEnabled)
                     SaveShadowThickness(layoutKey, strength);
-                MirageUi.Tooltip("Soft shadow radius in pixels (0 = off, fractional values allowed).");
+                MirageUi.Tooltip(I18n.Get("style.shadow_radius"));
             }
         }
     }
 
     private static string GetResetTooltip(string layoutKey, string column)
     {
-        var col = column.ToLowerInvariant();
+        var col = ColumnLabel(column);
         if (OverlayEntryIds.IsDefaultText(layoutKey) || OverlayEntryIds.IsDefaultSeparator(layoutKey))
-            return $"Copy Origin {col} into this row's stored parameters.";
+            return I18n.Format("style.reset.origin", col);
 
         if (GroupStyleKeys.IsOverrideKey(layoutKey))
-            return $"Copy Default Style {col} stored values into this override row.";
+            return I18n.Format("style.reset.default", col);
 
         if (GroupStyleKeys.IsPluginEntryKey(layoutKey))
-            return $"Copy overlay Override Text {col} stored values into this plugin row.";
+            return I18n.Format("style.reset.plugin", col);
 
-        return $"Copy overlay Override Text {col} stored values into this row.";
+        return I18n.Format("style.reset.row", col);
     }
+
+    private static string ColumnLabel(string column) => column switch
+    {
+        "Edge" => I18n.Get("style.column.edge"),
+        "Shadow" => I18n.Get("style.column.shadow"),
+        _ => I18n.Get("style.column.text"),
+    };
 
     private static void SaveTextColor(string layoutKey, Vector4 color)
     {

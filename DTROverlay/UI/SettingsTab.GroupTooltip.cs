@@ -6,10 +6,10 @@ public static partial class SettingsTab
 {
     private static void DrawGroupTooltipSection(DtrOverlayGroup group)
     {
-        MirageUi.SubHeader("Tooltip");
+        MirageUi.SubHeader(I18n.Get("style.tooltip"));
 
         DrawOverrideField(
-            "Position",
+            I18n.Get("style.position"),
             $"groupTooltipPos_{group.Id}",
             ref group.OverrideTooltipPositionEnabled,
             width =>
@@ -18,7 +18,7 @@ public static partial class SettingsTab
                 if (!DrawEnumDropdown(
                         string.Empty,
                         ref position,
-                        TooltipPositionLabels,
+                        TooltipPositionLabels(),
                         $"groupTooltipPos_{group.Id}",
                         width))
                     return;
@@ -28,7 +28,7 @@ public static partial class SettingsTab
             });
 
         DrawOverrideField(
-            "Font Size (px)",
+            I18n.Get("style.font_px"),
             $"groupTooltipFontSize_{group.Id}",
             ref group.OverrideTooltipFontSizePxEnabled,
             width =>
@@ -48,7 +48,7 @@ public static partial class SettingsTab
             });
 
         DrawOverrideField(
-            "Text",
+            I18n.Get("style.text"),
             $"groupTooltipText_{group.Id}",
             ref group.OverrideTooltipTextColorEnabled,
             width =>
@@ -63,7 +63,7 @@ public static partial class SettingsTab
             });
 
         DrawOverrideField(
-            "Background",
+            I18n.Get("style.background"),
             $"groupTooltipBg_{group.Id}",
             ref group.OverrideTooltipBackgroundColorEnabled,
             width =>

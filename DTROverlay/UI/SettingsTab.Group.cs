@@ -36,7 +36,7 @@ public static partial class SettingsTab
             "groupStyleSplit",
             () =>
             {
-                MirageUi.SubHeader("General", pushDown: false);
+                MirageUi.SubHeader(I18n.Get("general.header"), pushDown: false);
                 DrawGroupNameControl(group);
                 DrawGroupEnabledControl(group);
 
@@ -64,10 +64,10 @@ public static partial class SettingsTab
 
     private static void DrawGroupEnabledControl(DtrOverlayGroup group)
     {
-        if (MirageUi.Checkbox("Enable", ref group.Enabled))
+        if (MirageUi.Checkbox(I18n.Get("overlay.enable"), ref group.Enabled))
             C.Save();
 
-        MirageUi.Tooltip("Show this overlay when the plugin is enabled.");
+        MirageUi.Tooltip(I18n.Get("overlay.enable_hint"));
     }
 
     private static void DrawGroupNameControl(DtrOverlayGroup group)
@@ -76,11 +76,11 @@ public static partial class SettingsTab
         var name = group.Name;
         using (MirageUi.DisabledIf(locked))
         {
-            if (MirageUi.InputText("Name", ref name, 64, $"groupName_{group.Id}"))
+            if (MirageUi.InputText(I18n.Get("overlay.name"), ref name, 64, $"groupName_{group.Id}"))
                 DtrOverlayGroups.TryRenameOverlay(group, name);
         }
 
         if (locked)
-            TooltipWhenDisabled("Default and Native cannot be renamed.");
+            TooltipWhenDisabled(I18n.Get("overlay.rename_locked"));
     }
 }

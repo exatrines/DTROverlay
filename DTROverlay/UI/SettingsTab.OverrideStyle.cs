@@ -6,10 +6,10 @@ public static partial class SettingsTab
 {
     private static void DrawOverrideStyleSection(DtrOverlayGroup group)
     {
-        MirageUi.SubHeader("Override Style");
+        MirageUi.SubHeader(I18n.Get("style.override"));
 
         DrawOverrideField(
-            "Font Size Scale",
+            I18n.Get("layout.font_scale"),
             $"overrideFontSizeScale_{group.Id}",
             ref group.OverrideFontSizeScaleEnabled,
             width => DrawOverlayFontScale(
@@ -20,7 +20,7 @@ public static partial class SettingsTab
             DtrOverlayFonts.NotifyScaleChanged);
 
         DrawOverrideField(
-            "Separator width",
+            I18n.Get("style.separator_width"),
             $"overrideSeparatorWidth_{group.Id}",
             ref group.OverrideSeparatorSlotWidthPxEnabled,
             width =>
@@ -39,7 +39,7 @@ public static partial class SettingsTab
                 C.Save();
             });
 
-        MirageUi.Text("Font Colors", MirageUi.Color.Secondary);
+        MirageUi.Text(I18n.Get("style.colors"), MirageUi.Color.Secondary);
 
         if (!BeginFontColorStyleTable("##overrideStyleColors"))
             return;
