@@ -1,6 +1,24 @@
-# DTR Overlay
+<p align="center">
+  <img src="../DTROverlay/Data/plugin-icon.png" alt="DTR Overlay アイコン" width="128" height="128">
+</p>
 
-[English](../README.md)
+<h1 align="center">DTR Overlay</h1>
+
+<p align="center">
+  <a href="../README.md">English</a> | 日本語
+</p>
+
+<p align="center">
+  <a href="https://github.com/exatrines/DTROverlay/releases/latest">
+    <img src="https://img.shields.io/github/v/release/exatrines/DTROverlay?label=Release&amp;labelColor=F280B6&amp;color=FFFFFF&amp;style=flat&amp;sort=date&amp;display_name=tag" alt="Release">
+  </a>
+  <a href="../CHANGELOG.md">
+    <img src="https://img.shields.io/badge/Changelog-view-FFFFFF?labelColor=F280B6&amp;style=flat" alt="Changelog">
+  </a>
+  <a href="../LICENSE">
+    <img src="https://img.shields.io/badge/License-AGPL--3.0--or--later-FFFFFF?labelColor=F280B6&amp;style=flat" alt="AGPL-3.0-or-later">
+  </a>
+</p>
 
 DTR Overlay は、Server Info Bar を自分のオーバーレイとして描く Dalamud プラグインです。
 
@@ -34,12 +52,13 @@ https://raw.githubusercontent.com/exatrines/DalamudPlugins/refs/heads/main/plugi
 
 ## 開発者向け
 
-1. ビルド: `dotnet build DTROverlay.sln -c Release -p:Platform=x64`
-2. Dalamud の **dev plugin** パスを `DTROverlay/bin/Release/` にする
-3. プラグインインストーラ（dev）で **DTR Overlay** を有効にする
+1. `git submodule update --init --recursive`
+2. ビルド: `dotnet build DTROverlay.sln -c Release -p:Platform=x64`
+3. Dalamud の **dev plugin** パスを `DTROverlay/bin/Release/` にする
+4. プラグインインストーラ（dev）で **DTR Overlay** を有効にする
 
 共有 UI キットの [MirageUI](https://github.com/exatrines/MirageUI) を git サブモジュールとして含みます。
 
-## ライセンス
+## コントリビューション
 
-[AGPL-3.0-or-later](../LICENSE)
+コントリビューションは大歓迎です！[貢献ガイド](../CONTRIBUTING.md)をご覧ください。
